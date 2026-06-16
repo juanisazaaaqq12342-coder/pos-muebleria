@@ -30,7 +30,6 @@ python migrate_sqlite_to_postgres.py --keep-target
 El archivo `render.yaml` ya quedó configurado con:
 
 - `autoDeployTrigger: commit`
-- `preDeployCommand: python render_predeploy.py`
 - `startCommand: gunicorn wsgi:app --bind 0.0.0.0:$PORT`
 - `plan: free` para el web service
 - `plan: free` para Postgres
@@ -38,8 +37,8 @@ El archivo `render.yaml` ya quedó configurado con:
 Eso significa:
 
 - Cada `push` a la rama conectada dispara un deploy.
-- Antes de publicar la nueva versión, Render ejecuta el predeploy.
 - Luego arranca la app con Gunicorn.
+- La inicialización básica ocurre al arrancar la app mediante `wsgi.py`.
 
 ## 4. Imágenes persistentes
 
