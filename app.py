@@ -6,7 +6,7 @@ import sqlite3
 import calendar
 import unicodedata
 from datetime import datetime, timedelta
-from sqlalchemy import func, event, or_
+from sqlalchemy import func, event, or_, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
@@ -121,6 +121,7 @@ def load_config():
             db.create_all()
             asegurar_columnas_configuracion()
             asegurar_columnas_cliente()
+            asegurar_password_hash_largo()
             schema_ensured = True
         except Exception as schema_err:
             app.logger.warning("No se pudo verificar esquema en load_config: %s", schema_err)
@@ -212,7 +213,7 @@ class Categoria(db.Model):
 class Usuario(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128), nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
     rol = db.Column(db.String(20), nullable=False)  # admin, vendedor, cobrador, bodega
     sede_id = db.Column(db.Integer, db.ForeignKey('sede.id'), nullable=True)
 
@@ -592,6 +593,25 @@ def asegurar_columnas_cliente():
     finally:
         conn.close()
 
+def asegurar_password_hash_largo():
+    try:
+        inspector = inspect(db.engine)
+        tablas = set(inspector.get_table_names())
+        if "usuario" not in tablas:
+            return
+        columnas = {col["name"]: col for col in inspector.get_columns("usuario")}
+        password_col = columnas.get("password_hash")
+        if not password_col:
+            return
+        largo_actual = getattr(password_col.get("type"), "length", None)
+        if largo_actual is not None and largo_actual >= 255:
+            return
+        if db.engine.dialect.name == "postgresql":
+            with db.engine.begin() as conn:
+                conn.execute(text("ALTER TABLE usuario ALTER COLUMN password_hash TYPE VARCHAR(255)"))
+    except Exception as schema_err:
+        app.logger.warning("No se pudo ajustar columna password_hash: %s", schema_err)
+
 def nombre_completo_cliente(cliente):
     if not cliente:
         return "Consumidor Final"
@@ -850,6 +870,7 @@ def crear_datos_iniciales():
         db.create_all()
         asegurar_columnas_configuracion()
         asegurar_columnas_cliente()
+        asegurar_password_hash_largo()
         if not Usuario.query.filter_by(username="admin").first():
             # Sedes
             # Sedes
