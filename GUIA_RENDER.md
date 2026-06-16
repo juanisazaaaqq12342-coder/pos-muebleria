@@ -32,6 +32,8 @@ El archivo `render.yaml` ya quedó configurado con:
 - `autoDeployTrigger: commit`
 - `preDeployCommand: python render_predeploy.py`
 - `startCommand: gunicorn wsgi:app --bind 0.0.0.0:$PORT`
+- `plan: free` para el web service
+- `plan: free` para Postgres
 
 Eso significa:
 
@@ -41,11 +43,19 @@ Eso significa:
 
 ## 4. Imágenes persistentes
 
-Las imágenes de productos se guardan en el disco persistente configurado con:
+En modo gratis no usamos disco persistente. Las imágenes de productos se guardan en:
 
-- `mountPath: /opt/render/project/src/uploads`
-- `MEDIA_ROOT: /opt/render/project/src/uploads/productos`
+- `MEDIA_ROOT: /opt/render/project/src/static/img/productos`
 
-## 5. Recomendación
+Esto sirve para pruebas, pero no garantiza persistencia después de redeploys o reinicios del servicio.
+
+## 5. Limitaciones del modo gratis
+
+- El web service usa la instancia `Free`.
+- La base `Render Postgres` usa el plan `Free`.
+- El plan `Free` de Postgres en Render tiene límite de 30 días.
+- No hay disco persistente para archivos subidos.
+
+## 6. Recomendación
 
 Para cambios futuros de esquema más complejos, conviene luego incorporar migraciones formales con Alembic o Flask-Migrate. El predeploy actual sirve bien para inicialización y creación de tablas faltantes, pero no reemplaza una estrategia completa de migraciones versionadas.
