@@ -150,7 +150,9 @@ def load_config():
         
     # Proteccion CSRF Global para POST
     if request.method == "POST":
-        csrf_protect()
+        csrf_response = csrf_protect()
+        if csrf_response:
+            return csrf_response
 
 def csrf_protect():
     token = session.get('csrf_token')
@@ -158,7 +160,9 @@ def csrf_protect():
     if not token or token != form_token:
         # Silenciosamente permitir si es una peticion interna que ya validamos? No, seamos estrictos
         app.logger.warning(f"CSRF Denied: Session({token}) vs Form({form_token})")
-        abort(403, description="Error de Seguridad: Token CSRF no válido.")
+        session['csrf_token'] = secrets.token_hex(16)
+        flash("Tu sesion del formulario vencio. Intenta de nuevo.", "warning")
+        return redirect(request.referrer or url_for("login"))
 
 @app.route('/favicon.ico')
 def favicon():
@@ -4133,6 +4137,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5001"))
     print(f"[POS] build=render-ready pid={os.getpid()} debug={debug_mode} reloader={hot_reload} db={app.config['SQLALCHEMY_DATABASE_URI'].split(':', 1)[0]}")
     app.run(host="0.0.0.0", port=port, debug=debug_mode, use_reloader=hot_reload)
+
 
 
 
