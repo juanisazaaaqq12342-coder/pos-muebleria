@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Ficha Credito {{ credito.codigo }}</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; color: #0a1f4f; }
+    .sheet { max-width: 980px; margin: 0 auto; border: 1px solid #d5dbe8; padding: 18px; border-radius: 12px; }
+    .header { text-align: center; margin-bottom: 12px; }
+    .header h1 { margin: 0; font-size: 46px; letter-spacing: 0.5px; }
+    .header .sub { font-size: 20px; margin-top: 2px; }
+    .grid-top { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+    .box { border: 1px solid #15306d; border-radius: 8px; padding: 10px; }
+    .inline { display: flex; justify-content: space-between; gap: 10px; font-size: 15px; }
+    .line { margin-top: 8px; border-bottom: 1px solid #15306d; min-height: 22px; font-size: 20px; }
+    .row-label { font-weight: bold; width: 100px; display: inline-block; }
+    .checks { display: flex; gap: 14px; margin-top: 6px; font-size: 14px; }
+    .check { border: 1px solid #15306d; width: 15px; height: 15px; display: inline-flex; align-items: center; justify-content: center; margin-left: 5px; font-size: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { border: 1px solid #1d2d55; padding: 6px 8px; text-align: center; }
+    th { background: #0a2a65; color: white; }
+    .tablas { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+    .footer-note { text-align: center; margin-top: 16px; font-size: 24px; font-weight: bold; letter-spacing: 0.5px; }
+    @media print {
+      body { margin: 0; }
+      .sheet { border: none; border-radius: 0; max-width: none; }
+    }
+  </style>
+</head>
+<body onload="window.print()">
+  <div class="sheet">
+    <div class="header">
+      <h1>{{ config.nombre_empresa or 'Muebleria' }}</h1>
+      <div class="sub">VENTA DE MERCANCIAS A CREDITO Y CONTADO</div>
+      <div class="sub">Cel: {{ config.telefono or '---' }}</div>
+    </div>
+
+    <div class="grid-top">
+      <div class="box">
+        <div class="inline">
+          <div><b>Fecha:</b> {{ fecha.strftime('%d') }} / {{ fecha.strftime('%m') }} / {{ fecha.strftime('%Y') }}</div>
+          <div><b>N de cuota:</b> {{ credito.numero_cuotas }}</div>
+        </div>
+        <div class="checks">
+          <div>Semanal <span class="check">{% if credito.periodicidad == 'Semanal' %}X{% endif %}</span></div>
+          <div>Quincenal <span class="check">{% if credito.periodicidad == 'Quincenal' %}X{% endif %}</span></div>
+          <div>Mensual <span class="check">{% if credito.periodicidad == 'Mensual' %}X{% endif %}</span></div>
+        </div>
+        {% if dia_pago_info %}
+        <div style="margin-top:6px;font-size:14px;"><b>{{ dia_pago_info }}</b></div>
+        {% endif %}
+      </div>
+      <div class="box">
+        <div class="inline">
+          <div><b>Codigo:</b> {{ credito.codigo }}</div>
+          <div><b>Total:</b> ${{ "{:,.0f}".format(credito.monto_total or 0) }}</div>
+        </div>
+        <div class="inline" style="margin-top: 8px;">
+          <div><b>Valor cuota:</b> ${{ "{:,.0f}".format(credito.valor_cuota or 0) }}</div>
+          <div><b>Saldo:</b> ${{ "{:,.0f}".format(credito.saldo_actual or 0) }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="line"><span class="row-label">Nombre:</span> {{ credito.cliente.nombre }}</div>
+    <div class="line"><span class="row-label">C.C./NIT:</span> {{ credito.cliente.documento or '' }}</div>
+    <div class="line"><span class="row-label">Celular:</span> {{ credito.cliente.telefono or '' }}</div>
+    <div class="line"><span class="row-label">Direccion:</span> {{ credito.cliente.direccion or '' }}</div>
+    {% if referencias_ficha %}
+      {% for rf in referencias_ficha %}
+      <div class="line" style="font-size:14px;"><span class="row-label">Ref.:</span> {{ rf }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <div class="tablas">
+      <table>
+        <thead>
+          <tr><th>N.</th><th>Fecha</th><th>Abono</th><th>Resta</th></tr>
+        </thead>
+        <tbody>
+          {% for row in filas_izq %}
+          <tr>
+            <td>{{ row.n }}</td>
+            <td>{{ row.fecha }}</td>
+            <td>{% if row.abono != '' %}${{ "{:,.0f}".format(row.abono) }}{% endif %}</td>
+            <td>{% if row.resta != '' %}${{ "{:,.0f}".format(row.resta) }}{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <table>
+        <thead>
+          <tr><th>N.</th><th>Fecha</th><th>Abono</th><th>Resta</th></tr>
+        </thead>
+        <tbody>
+          {% for row in filas_der %}
+          <tr>
+            <td>{{ row.n }}</td>
+            <td>{{ row.fecha }}</td>
+            <td>{% if row.abono != '' %}${{ "{:,.0f}".format(row.abono) }}{% endif %}</td>
+            <td>{% if row.resta != '' %}${{ "{:,.0f}".format(row.resta) }}{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="footer-note">Sin terminar un credito no solicite el otro.</div>
+  </div>
+</body>
+</html>

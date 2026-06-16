@@ -1,0 +1,386 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="animate-slide-in">
+
+  <!-- Encabezado -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold m-0 text-dark" style="font-family:'Playfair Display',serif;">
+        <i class="bi bi-cash-coin text-accent me-2"></i>Cobranzas
+      </h2>
+      <p class="text-muted small m-0 text-uppercase">Cobros del dia · Cuotas vencidas · Plan de pagos</p>
+    </div>
+    <a href="{{ url_for('cobranzas') }}" class="btn btn-outline-secondary rounded-pill px-4">
+      <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+    </a>
+  </div>
+
+  <!-- Tarjetas resumen -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm rounded-4 bg-warning bg-opacity-10 border-warning h-100">
+        <div class="card-body text-center p-3">
+          <div class="text-warning fw-bold small text-uppercase">Cuotas Hoy</div>
+          <div class="display-6 fw-bold text-warning">{{ cuotas_hoy|length }}</div>
+          <div class="small text-muted">${{ "{:,.0f}".format(total_cobrar_hoy) }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm rounded-4 bg-danger bg-opacity-10 h-100">
+        <div class="card-body text-center p-3">
+          <div class="text-danger fw-bold small text-uppercase">Vencidas</div>
+          <div class="display-6 fw-bold text-danger">{{ cuotas_vencidas|length }}</div>
+          <div class="small text-muted">${{ "{:,.0f}".format(total_vencido) }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm rounded-4 bg-success bg-opacity-10 h-100">
+        <div class="card-body text-center p-3">
+          <div class="text-success fw-bold small text-uppercase">Pagos Hoy</div>
+          <div class="display-6 fw-bold text-success">${{ "{:,.0f}".format(total_pagos_hoy) }}</div>
+          <div class="small text-muted">recibidos</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm rounded-4 bg-info bg-opacity-10 h-100">
+        <div class="card-body text-center p-3">
+          <div class="text-info fw-bold small text-uppercase">Proximas (3 dias)</div>
+          <div class="display-6 fw-bold text-info">{{ proximas|length }}</div>
+          <div class="small text-muted">${{ "{:,.0f}".format(total_proximas or 0) }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm rounded-4 bg-primary bg-opacity-10 h-100">
+        <div class="card-body text-center p-3">
+          <div class="text-primary fw-bold small text-uppercase">Proximas Semana</div>
+          <div class="display-6 fw-bold text-primary">{{ proximas_semana|length }}</div>
+          <div class="small text-muted">${{ "{:,.0f}".format(total_proximas_semana or 0) }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if proximas_semana_preview %}
+  <div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="fw-bold m-0"><i class="bi bi-bell me-2 text-primary"></i>Creditos que vencen en la semana</h6>
+        <span class="badge bg-light text-dark border">{{ proximas_semana|length }} pendientes</span>
+      </div>
+      <div class="row g-2">
+        {% for cuota in proximas_semana_preview %}
+        <div class="col-md-6 col-lg-4">
+          <div class="p-2 rounded-3 border bg-light h-100">
+            <div class="fw-bold small">{{ cuota.credito.cliente.nombre if cuota.credito and cuota.credito.cliente else 'Cliente' }}</div>
+            <div class="small text-muted">{{ cuota.credito.codigo if cuota.credito else '---' }} · Cuota #{{ cuota.numero_cuota }}</div>
+            <div class="small text-muted">Vence: {{ cuota.fecha_vencimiento.strftime('%d/%m/%Y') }}</div>
+            <div class="fw-bold text-danger">${{ "{:,.0f}".format(cuota.saldo_pendiente or 0) }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Filtros -->
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+    <div class="d-flex gap-2 flex-wrap">
+      {% set filtros = [('hoy','Hoy','warning'),('vencidas','Vencidas','danger'),('proximas','Proximas','info'),('semana','Semana','primary'),('activos','Todos Activos','primary'),('pagados','Pagados','success'),('todos','Historial Completo','secondary')] %}
+      {% for f,label,color in filtros %}
+      <a href="{{ url_for('cobranzas', filtro=f) }}"
+         class="btn btn-sm rounded-pill fw-bold {{ 'btn-' ~ color if filtro_activo==f else 'btn-outline-' ~ color }}">
+        {{ label }}
+      </a>
+      {% endfor %}
+    </div>
+
+    <!-- Filtros de cliente y credito -->
+    <form method="GET" action="{{ url_for('cobranzas') }}" class="d-flex gap-2 align-items-center bg-white p-2 rounded-pill shadow-sm border">
+      <input type="hidden" name="filtro" value="todos">
+      <input type="text" id="clienteSearchLocal" name="q" value="{{ search_q or '' }}" class="form-control form-control-sm border-0 bg-transparent"
+             placeholder="Buscar cliente..." style="min-width: 160px;">
+      <select name="cliente_id" class="form-select form-select-sm border-0 bg-transparent fw-bold" style="min-width: 150px;">
+        <option value="">Todos los Clientes</option>
+        {% for c in clientes_lista %}
+        <option value="{{ c.id }}"
+                data-search="{{ (c.nombre or '')|lower }} {{ (c.telefono or '')|lower }} {{ (c.documento or '')|lower }}"
+                {% if cliente_id_f == c.id|string %}selected{% endif %}>
+          {{ c.nombre }}
+        </option>
+        {% endfor %}
+      </select>
+      <div class="vr"></div>
+      <select name="credito_id" class="form-select form-select-sm border-0 bg-transparent fw-bold" style="min-width: 160px;">
+        <option value="">Todos los Créditos</option>
+        {% for cr in creditos %}
+        <option value="{{ cr.id }}" {% if credito_id_f == cr.id|string %}selected{% endif %}>{{ cr.codigo }} - {{ cr.cliente.nombre }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm"><i class="bi bi-search"></i> Buscar</button>
+      {% if cliente_id_f or credito_id_f %}
+      <a href="{{ url_for('cobranzas') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2"><i class="bi bi-x"></i></a>
+      {% endif %}
+    </form>
+  </div>
+
+  <!-- Tabla cuotas -->
+  <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="bg-dark text-white">
+          <tr>
+            <th class="ps-3 py-3">Cliente</th>
+            <th>Credito</th>
+            <th>Cuota</th>
+            <th>Vencimiento</th>
+            <th class="text-end">Valor</th>
+            <th class="text-end">Pagado</th>
+            <th class="text-end">Saldo</th>
+            <th class="text-center">Estado</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cuota in cuotas_tabla %}
+          {% set c = cuota.credito.cliente %}
+          {% set estado = cuota.estado %}
+          <tr class="border-bottom
+            {% if estado=='Vence hoy' %} table-warning
+            {% elif estado=='Vencida' %} table-danger
+            {% elif estado=='Pagada' %} table-success
+            {% elif estado=='Abonada' %} table-info
+            {% endif %}">
+            <td class="ps-3">
+              <div class="fw-bold">{{ c.nombre }}</div>
+              <div class="small text-muted">{{ c.telefono }}</div>
+            </td>
+            <td>
+              <div class="fw-bold text-primary small">{{ cuota.credito.codigo }}</div>
+              <div class="small text-muted">{{ cuota.credito.periodicidad }}</div>
+            </td>
+            <td class="fw-bold text-center">{{ cuota.numero_cuota }}/{{ cuota.credito.numero_cuotas }}</td>
+            <td>{{ cuota.fecha_vencimiento.strftime('%d/%m/%Y') }}</td>
+            <td class="text-end fw-bold">${{ "{:,.0f}".format(cuota.valor_cuota) }}</td>
+            <td class="text-end text-success">${{ "{:,.0f}".format(cuota.valor_pagado or 0) }}</td>
+            <td class="text-end fw-bold text-danger">${{ "{:,.0f}".format(cuota.saldo_pendiente) }}</td>
+            <td class="text-center">
+              <span class="badge rounded-pill
+                {% if estado=='Vence hoy' %}bg-warning text-dark
+                {% elif estado=='Vencida' %}bg-danger
+                {% elif estado=='Pagada' %}bg-success
+                {% elif estado=='Abonada' %}bg-info text-dark
+                {% elif estado=='Cancelada' %}bg-secondary
+                {% else %}bg-light text-dark border{% endif %}">
+                {{ estado }}
+              </span>
+            </td>
+            <td class="text-center">
+              <div class="d-flex gap-1 justify-content-center">
+                {% if estado not in ['Pagada','Cancelada'] %}
+                <button class="btn btn-sm btn-primary rounded-pill px-3 fw-bold"
+                  onclick="abrirPago({{ cuota.id }},'{{ c.nombre }}','{{ cuota.credito.codigo }}',{{ cuota.numero_cuota }},{{ cuota.valor_cuota }},{{ cuota.valor_pagado or 0 }},{{ cuota.saldo_pendiente }},{{ cuota.credito.saldo_actual }})">
+                  <i class="bi bi-cash me-1"></i>Pagar
+                </button>
+                {% endif %}
+                <a href="{{ url_for('formato_credito', credito_id=cuota.credito.id) }}" target="_blank" class="btn btn-sm btn-outline-dark rounded-pill" title="Kardex de credito">
+                  <i class="bi bi-file-earmark-text"></i>
+                </a>
+                <a href="https://wa.me/{{ c.telefono|replace('+','')|replace(' ','')|replace('-','') }}?text={{ ('Hola ' ~ c.nombre ~ ', te recordamos tu cuota #' ~ cuota.numero_cuota ~ ' del credito ' ~ cuota.credito.codigo ~ ' por $' ~ '{:,.0f}'.format(cuota.saldo_pendiente) ~ '. Vence: ' ~ cuota.fecha_vencimiento.strftime('%d/%m/%Y') ~ '. Gracias.')|urlencode }}"
+                   target="_blank" class="btn btn-sm btn-success rounded-pill" title="WhatsApp">
+                  <i class="bi bi-whatsapp"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="9" class="text-center py-5 text-muted">
+            <i class="bi bi-check2-circle display-4 d-block mb-2 opacity-25"></i>
+            No hay cuotas para este filtro.
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Ultimos Pagos -->
+  <h4 class="fw-bold mb-3"><i class="bi bi-clock-history me-2 text-primary"></i>Ultimos Pagos Registrados</h4>
+  <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead class="bg-light text-muted small text-uppercase">
+          <tr>
+            <th class="ps-3">Fecha</th>
+            <th>Cliente</th>
+            <th>Credito / Cuota</th>
+            <th>Metodo</th>
+            <th class="text-end">Monto</th>
+            <th class="text-center">Recibo</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for abono in ultimos_abonos %}
+          <tr class="border-bottom">
+            <td class="ps-3 text-muted small">{{ abono.fecha.strftime('%d/%m/%Y %H:%M') }}</td>
+            <td class="fw-bold">{{ abono.credito.cliente.nombre }}</td>
+            <td>
+              <div class="fw-bold text-primary">{{ abono.credito.codigo }}</div>
+              {% if abono.numero_cuota %}<div class="small text-muted">Cuota #{{ abono.numero_cuota }}</div>{% endif %}
+            </td>
+            <td class="text-muted small">{{ abono.metodo_pago or 'Efectivo' }}</td>
+            <td class="text-end fw-bold text-success">${{ "{:,.0f}".format(abono.monto) }}</td>
+            <td class="text-center">
+              <a href="{{ url_for('imprimir_abono', abono_id=abono.id) }}" target="_blank" class="btn btn-sm btn-outline-dark rounded-pill">
+                <i class="bi bi-printer me-1"></i>Imprimir
+              </a>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="text-center text-muted py-4">No hay pagos recientes.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal Pago Cuota -->
+<div class="modal fade" id="modalPagoCuota" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-xl rounded-5 overflow-hidden">
+      <div class="modal-header bg-dark text-white p-4">
+        <h5 class="modal-title fw-bold"><i class="bi bi-cash-stack text-accent me-2"></i>Registrar Pago de Cuota</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formPagoCuota" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+        <div class="modal-body p-4">
+          <div class="row g-2 mb-3 text-center">
+            <div class="col-4">
+              <div class="small text-muted">Valor Cuota</div>
+              <div class="fw-bold text-dark" id="pc_valor"></div>
+            </div>
+            <div class="col-4">
+              <div class="small text-muted">Ya Pagado</div>
+              <div class="fw-bold text-success" id="pc_pagado"></div>
+            </div>
+            <div class="col-4">
+              <div class="small text-muted">Saldo</div>
+              <div class="fw-bold text-danger" id="pc_saldo"></div>
+            </div>
+          </div>
+          <div class="p-3 bg-light rounded-3 mb-3">
+            <div class="fw-bold" id="pc_cliente"></div>
+            <div class="small text-muted" id="pc_info"></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold small text-uppercase text-muted">Monto a Pagar</label>
+            <div class="input-group input-group-lg">
+              <span class="input-group-text fw-bold">$</span>
+              <input type="number" name="monto_pago" id="pc_monto" class="form-control fw-bold text-center fs-3"
+                     min="1" required placeholder="0">
+            </div>
+            <div class="form-text text-muted small text-center mt-2">
+                <i class="bi bi-info-circle me-1"></i>Puedes ingresar un monto mayor para <strong>amortizar</strong> cuotas futuras.
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold small text-uppercase text-muted">Metodo de Pago</label>
+            <select name="metodo_pago" class="form-select">
+              <option>Efectivo</option>
+              <option>Transferencia</option>
+              <option>Tarjeta</option>
+              <option>Otro</option>
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label fw-bold small text-uppercase text-muted">Observacion</label>
+            <input type="text" name="observacion" class="form-control" placeholder="Opcional">
+          </div>
+        </div>
+        <div class="modal-footer border-0 p-4">
+          <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary fw-bold px-5 py-2">CONFIRMAR PAGO</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function normalizarTextoLocal(texto){
+  return (texto || '')
+    .toString()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+}
+
+function filtrarClientesLocal(){
+  const searchInput = document.getElementById('clienteSearchLocal');
+  const selectCliente = document.querySelector('select[name="cliente_id"]');
+  if(!searchInput || !selectCliente) return;
+
+  const q = normalizarTextoLocal(searchInput.value);
+  const all = JSON.parse(selectCliente.dataset.allOptions || '[]');
+  const filtradas = q
+    ? all.filter(opt => normalizarTextoLocal(opt.search || opt.text || '').includes(q))
+    : all;
+
+  const actual = selectCliente.value || '';
+  selectCliente.innerHTML = '<option value="">Todos los Clientes</option>';
+  filtradas.forEach(opt => {
+    const o = document.createElement('option');
+    o.value = opt.value;
+    o.textContent = opt.text;
+    o.setAttribute('data-search', opt.search || '');
+    selectCliente.appendChild(o);
+  });
+
+  if(actual && filtradas.some(opt => String(opt.value) === String(actual))){
+    selectCliente.value = actual;
+  } else if(filtradas.length === 1){
+    selectCliente.value = String(filtradas[0].value);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  const searchInput = document.getElementById('clienteSearchLocal');
+  const selectCliente = document.querySelector('select[name="cliente_id"]');
+  if(selectCliente){
+    const all = Array.from(selectCliente.querySelectorAll('option'))
+      .slice(1)
+      .map(opt => ({
+        value: opt.value,
+        text: opt.textContent || '',
+        search: opt.getAttribute('data-search') || ''
+      }));
+    selectCliente.dataset.allOptions = JSON.stringify(all);
+  }
+  if(searchInput){
+    searchInput.addEventListener('input', filtrarClientesLocal);
+  }
+  filtrarClientesLocal();
+});
+
+function abrirPago(id, cliente, codigo, ncuota, valor, pagado, saldo, saldo_credito) {
+  document.getElementById('pc_cliente').innerText = cliente;
+  document.getElementById('pc_info').innerText = 'Credito: ' + codigo + ' | Cuota #' + ncuota;
+  document.getElementById('pc_valor').innerText = '$' + valor.toLocaleString();
+  document.getElementById('pc_pagado').innerText = '$' + pagado.toLocaleString();
+  document.getElementById('pc_saldo').innerText = '$' + saldo.toLocaleString();
+  document.getElementById('pc_monto').value = saldo;
+  document.getElementById('pc_monto').max = saldo_credito;
+  document.getElementById('formPagoCuota').action = '/pagar_cuota/' + id;
+  new bootstrap.Modal(document.getElementById('modalPagoCuota')).show();
+  setTimeout(() => document.getElementById('pc_monto').focus(), 300);
+}
+</script>
+{% endblock %}

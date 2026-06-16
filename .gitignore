@@ -1,0 +1,15 @@
+instance/cloudflared_token.txt
+instance/backup_pre_reset_*.db
+instance/pos_v2.db
+instance/pos_v2.db-wal
+instance/pos_v2.db-shm
+instance/.secret_key
+.venv/
+.venv_win8/
+__pycache__/
+build/
+dist/
+dist_win8/
+logs/
+uploads/
+token.txt

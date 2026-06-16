@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="animate-slide-in">
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h2 class="fw-bold m-0 text-dark" style="font-family: 'Playfair Display', serif;">Historial de Ventas</h2>
+            <p class="text-muted small m-0 text-uppercase tracking-widest">Maestro de pedidos y devoluciones</p>
+        </div>
+    </div>
+
+    <!-- FILTROS PREMIUM -->
+    <div class="glass-panel border-0 shadow-lg p-4 mb-5">
+        <form class="row g-3 align-items-center" method="GET">
+            <input type="hidden" name="q" value="{{ request.args.get('q', '') }}">
+            <div class="col-md-2">
+                <label class="form-label text-muted fw-bold small text-uppercase tracking-wider">ID Venta</label>
+                <input type="number" name="venta_id" class="form-control border-accent-subtle bg-light" placeholder="#000" value="{{ request.args.get('venta_id', '') }}">
+            </div>
+            <div class="col-md-5">
+                <label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Buscar por Cliente</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-accent-subtle"><i class="bi bi-search"></i></span>
+                    <input type="text" name="cliente" class="form-control border-accent-subtle bg-light" placeholder="Nombre completo..." value="{{ request.args.get('cliente', '') }}">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label d-block text-muted fw-bold small text-uppercase tracking-wider">&nbsp;</label>
+                <button class="btn btn-primary w-100 fw-bold shadow-accent py-2"><i class="bi bi-funnel-fill me-2"></i>APLICAR FILTRO</button>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label d-block text-muted fw-bold small text-uppercase tracking-wider">&nbsp;</label>
+                <a href="{{ url_for('historial_ventas') }}" class="btn btn-outline-dark w-100 fw-bold border py-2">LIMPIAR</a>
+            </div>
+        </form>
+        {% if request.args.get('q') %}
+        <div class="small text-primary mt-2 fw-bold">
+            Resultado de búsqueda: "{{ request.args.get('q') }}"
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- TABLA DE VENTAS PREMIUM -->
+    <div class="glass-panel border-0 shadow-xl p-0 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-dark text-white">
+                    <tr>
+                        <th class="ps-4 py-3 text-uppercase tracking-widest small fw-bold">ID</th>
+                        <th class="py-3 text-uppercase tracking-widest small fw-bold">Fecha / Hora</th>
+                        <th class="py-3 text-uppercase tracking-widest small fw-bold">Cliente / Sede</th>
+                        <th class="py-3 text-center text-uppercase tracking-widest small fw-bold">Estado</th>
+                        <th class="py-3 text-end text-uppercase tracking-widest small fw-bold">Total Venta</th>
+                        <th class="pe-4 py-3 text-end text-uppercase tracking-widest small fw-bold">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for v in ventas %}
+                    <tr class="border-bottom">
+                        <td class="ps-4 fw-bold text-dark fs-5">#{{ v.id }}</td>
+                        <td class="text-muted small">
+                            <i class="bi bi-calendar-event me-1"></i> {{ v.fecha_cierre.strftime('%d/%m/%Y') if v.fecha_cierre else '---' }}<br>
+                            <i class="bi bi-clock me-1"></i> {{ v.fecha_cierre.strftime('%H:%M') if v.fecha_cierre else '---' }}
+                        </td>
+                        <td>
+                            <div class="fw-bold text-dark">{{ v.cliente.nombre if v.cliente else 'CONSUMIDOR FINAL' }}</div>
+                            <div class="small badge bg-light text-muted border fw-normal">{{ v.sede.nombre if v.sede else 'Sede Central' }}</div>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge rounded-pill px-3 py-2 fw-bold text-uppercase 
+                                {{ 'bg-success shadow-sm' if v.estado == 'Pagada' else 'bg-warning-subtle text-warning border' }}">
+                                {{ v.estado }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <div class="fw-bold text-dark fs-5">${{ "{:,.0f}".format(v.total) }}</div>
+                            {% set cr = v.creditos[0] if v.creditos else None %}
+                            {% if cr %}
+                                {% set pagadas = cr.cuotas|selectattr("estado", "equalto", "Pagada")|list|length %}
+                                <div class="small text-muted mt-2 text-start d-inline-block bg-light p-2 rounded border">
+                                    <div class="text-primary fw-bold mb-1"><i class="bi bi-credit-card-2-front"></i> {{ cr.codigo }}</div>
+                                    <div><strong>Saldo:</strong> <span class="text-danger">${{ "{:,.0f}".format(cr.saldo_actual) }}</span></div>
+                                    <div><strong>Cuotas:</strong> {{ pagadas }} de {{ cr.numero_cuotas }}</div>
+                                    <div class="mt-1 text-center">
+                                        <a href="{{ url_for('formato_credito', credito_id=cr.id) }}" target="_blank" class="text-decoration-none text-accent fw-bold"><i class="bi bi-file-earmark-text"></i> Ver Kardex</a>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="small text-muted mt-1"><i class="bi bi-cash-coin"></i> Pago Único</div>
+                            {% endif %}
+                        </td>
+                        <td class="pe-4 text-end">
+                            <div class="d-flex flex-column gap-2 align-items-end">
+                                <a href="{{ url_for('imprimir_ticket', venta_id=v.id) }}" target="_blank" class="btn btn-sm btn-dark rounded-pill px-3 shadow-sm w-100" title="Imprimir Comprobante">
+                                    <i class="bi bi-printer me-1"></i> Imprimir
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-danger fw-bold rounded-pill px-3 shadow-sm border-danger w-100" onclick="abrirModalDevolucion({{ v.id }}); return false;">
+                                    <i class="bi bi-arrow-return-left me-1"></i> Devolver
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- DATA HIDDEN PARA MODAL DEVOLUCION -->
+                    <template id="items_venta_{{ v.id }}">
+                        {% for item in v.items %}
+                        {% set disp = item.cantidad - item.cantidad_devuelta %}
+                        <div class="item-row mb-4 p-3 rounded-4 bg-light border-start border-4 {{ 'border-danger' if disp > 0 else 'border-secondary' }}">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div class="lh-sm">
+                                    <div class="fw-bold text-dark fs-5">{{ item.producto.nombre }}</div>
+                                    <div class="text-muted small">Cantidad Original: {{ item.cantidad }} | Ya Devuelto: {{ item.cantidad_devuelta }}</div>
+                                </div>
+                                <div class="badge bg-white text-dark shadow-sm border px-3 py-2 fs-6 fw-bold">UNIT: ${{ "{:,.0f}".format(item.precio_unitario) }}</div>
+                            </div>
+                            
+                            {% if disp > 0 %}
+                            <form action="{{ url_for('api_devolucion') }}" method="POST" class="row g-2 align-items-center">
+                                <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+                                <input type="hidden" name="detalle_id" value="{{ item.id }}">
+                                <div class="col-6">
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white border-accent small fw-bold">CANT.</span>
+                                        <input type="number" name="cantidad" class="form-control border-accent fw-bold text-center" value="1" min="1" max="{{ disp }}">
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <button class="btn btn-danger w-100 fw-bold shadow-sm py-2">
+                                        EJECUTAR DEVOLUCIÓN
+                                    </button>
+                                </div>
+                            </form>
+                            {% else %}
+                            <div class="alert alert-secondary py-2 px-3 m-0 d-flex align-items-center gap-2">
+                                <i class="bi bi-check-circle-fill text-success"></i> Artículo totalmente retornado.
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </template>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <div class="opacity-25 display-1 mb-3"><i class="bi bi-receipt-cutoff"></i></div>
+                            <p class="fw-bold">No se encontraron ventas con los criterios especificados.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DEVOLUCION PREMIUM -->
+<div class="modal fade" id="modalDevolucion" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content glass-panel border-0 shadow-xl overflow-hidden">
+            <div class="modal-header bg-dark text-white p-4">
+                <h5 class="modal-title fw-bold" style="font-family: 'Playfair Display', serif;"><i class="bi bi-arrow-return-left text-accent me-2"></i>Gestión de Garantía y Retornos</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="alert alert-warning border-0 bg-warning bg-opacity-10 text-warning-emphasis shadow-sm mb-4">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> <strong>Importante:</strong> Al procesar una devolución, los artículos se moverán a la <b>Bodega de Dañados</b> y se generará una nota de crédito automática.
+                </div>
+                <div id="modalContentItems">
+                    <!-- Dinámico -->
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-4 pt-0">
+                <button type="button" class="btn btn-light w-100 fw-bold border py-3" data-bs-dismiss="modal">CERRAR PANEL</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const mDev = new bootstrap.Modal(document.getElementById('modalDevolucion'));
+
+    function abrirModalDevolucion(ventaId) {
+        const src = document.getElementById('items_venta_' + ventaId);
+        if(!src){
+            alert('No se pudieron cargar los items de la venta para devolución.');
+            return;
+        }
+        const content = src.innerHTML || '';
+        if(!content.trim()){
+            alert('Esta venta no tiene items disponibles para devolución.');
+            return;
+        }
+        document.getElementById('modalContentItems').innerHTML = content;
+        mDev.show();
+    }
+</script>
+{% endblock %}

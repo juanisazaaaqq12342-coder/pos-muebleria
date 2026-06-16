@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Ticket</title>
+    <style>
+        /* Estilos generales */
+        body {
+            font-family: 'Courier New', monospace;
+            width: 44mm;
+            /* Ancho reducido para margen de seguridad Jaltech */
+            margin: 0 auto;
+            font-size: 11px;
+            /* Un poco más grande para legibilidad */
+            font-weight: bold;
+            /* Todo en negrita para mejor impresión */
+            padding: 2px;
+            padding-bottom: 5mm;
+            /* Espacio extra al final para el corte */
+            background: #fff;
+            color: #000;
+        }
+
+        /* Clases de utilidad */
+        .c {
+            text-align: center;
+        }
+
+        .r {
+            text-align: right;
+        }
+
+        .b {
+            font-weight: bold;
+        }
+
+        /* Manejo de tablas */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            /* Fuerza a respetar los anchos definidos */
+        }
+
+        td {
+            vertical-align: top;
+            word-wrap: break-word;
+            /* Rompe palabras largas */
+            overflow-wrap: break-word;
+        }
+
+        /* Línea separadora */
+        .line {
+            border-bottom: 1px dashed #000;
+            margin: 4px 0;
+        }
+
+        /* Configuración específica para impresión */
+        @media print {
+            @page {
+                margin: 0;
+                size: 58mm auto;
+                /* auto permite que el largo se ajuste al contenido */
+            }
+
+            /* Ocultar elementos que no deben salir en papel */
+            .np {
+                display: none !important;
+            }
+
+            body {
+                margin: 0;
+                padding-top: 2px;
+                /* Importante: asegura que el navegador no fuerce márgenes blancos */
+            }
+        }
+    </style>
+</head>
+
+<body onload="window.print()">
+    <!-- Encabezado Empresa -->
+    <div class="c b" style="font-size:14px; margin-bottom:4px; text-transform: uppercase;">
+        {{ configuracion.nombre_empresa | default('Punto de Venta', true) }}
+    </div>
+
+    <div class="c" style="font-size:10px; line-height:1.2">
+        NIT: {{ configuracion.nit | default('---', true) }}<br>
+        {{ configuracion.direccion | default('---', true) }}<br>
+        Tel: {{ configuracion.telefono | default('---', true) }}
+    </div>
+
+    <div class="line"></div>
+
+    <!-- Datos del Pedido -->
+    <div class="c b" style="font-size:12px">
+        {{ titulo }} #{{ pedido.id }}
+    </div>
+    <div class="c" style="font-size:10px">
+        {{ pedido.fecha_creacion.strftime('%d/%m/%Y %H:%M') }}
+    </div>
+
+    <div style="margin:4px 0; font-size:10px; line-height:1.3">
+        {% if pedido.es_domicilio %}
+        <div class="c b" style="font-size: 14px; margin-top: 5px;">DOMICILIO</div>
+        <b>CLI:</b> {{ pedido.cliente.nombre }}<br>
+        {{ pedido.cliente.direccion }}
+        {% else %}
+        <div class="c b" style="font-size: 14px; margin-top: 5px; background: #eee; padding: 2px;">
+            MESA: {{ pedido.mesa.nombre }}
+            {% if pedido.silla==0 %}
+            (TODO)
+            {% elif pedido.sillas_extra %}
+            (Grupo)
+            {% else %}
+            (Silla {{pedido.silla}})
+            {% endif %}
+        </div>
+        {% endif %}
+        <br>
+        <b>Cajero:</b> {{ session['username'] }}
+    </div>
+
+    <div class="line"></div>
+
+    <!-- Tabla de Productos -->
+    <table style="font-size:10px">
+        {% set ns = namespace(subtotal_items=0) %}
+        {% for i in items_agrupados %}
+        {% set subtotal_linea = i.precio * i.cantidad %}
+        {% set ns.subtotal_items = ns.subtotal_items + subtotal_linea %}
+        <tr>
+            <td width="10%" class="b" style="vertical-align: top;">{{ i.cantidad }}</td>
+            <td width="55%" style="padding-left: 2px;">
+                {{ i.nombre }}
+                {% if i.notas %}
+                <br><i style="font-size:9px">({{ i.notas }})</i>
+                {% endif %}
+            </td>
+            <td class="r" width="35%">${{ "{:,.0f}".format(subtotal_linea) }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <div class="line"></div>
+
+    <!-- Costos Extra -->
+    {% if pedido.costo_domicilio or pedido.costo_empaque %}
+    {% if pedido.costo_domicilio %}
+    <div style="display:flex; justify-content:space-between; font-size:10px">
+        <span>Domicilio:</span>
+        <span>${{ "{:,.0f}".format(pedido.costo_domicilio) }}</span>
+    </div>
+    {% endif %}
+
+    {% if pedido.costo_empaque %}
+    <div style="display:flex; justify-content:space-between; font-size:10px">
+        <span>Empaque:</span>
+        <span>${{ "{:,.0f}".format(pedido.costo_empaque) }}</span>
+    </div>
+    {% endif %}
+    <div class="line"></div>
+    {% endif %}
+
+    <!-- Totales -->
+    {% if ns.subtotal_items > pedido.total %}
+    <div style="display:flex; justify-content:space-between; font-size:11px; margin-top: 2px;">
+        <span>Descuento contado</span>
+        <span>- ${{ "{:,.0f}".format(ns.subtotal_items - pedido.total) }}</span>
+    </div>
+    {% endif %}
+    <div style="display:flex; justify-content:space-between; font-size:15px; margin-top: 2px;" class="b">
+        <span>TOTAL</span>
+        <span>${{ "{:,.0f}".format(pedido.total) }}</span>
+    </div>
+
+    <div class="c b" style="font-size: 11px; margin-top: 8px; border: 1px dashed #000; padding: 4px;">
+        ¡GRACIAS POR SU VISITA!
+    </div>
+
+    {% if titulo!='COMANDA' and pedido.metodo_pago=='Efectivo' %}
+    <div class="r" style="font-size:11px; margin-top:5px; border-top: 1px dotted #000; padding-top: 2px;">
+        Recibe: ${{ "{:,.0f}".format(pedido.monto_recibido) }}<br>
+        <b>Cambio: ${{ "{:,.0f}".format(pedido.cambio) }}</b>
+    </div>
+    {% endif %}
+
+    <!-- Pie de página -->
+    {% if titulo!='COMANDA' %}
+    <div class="c" style="margin-top:10px; font-size:10px; font-style: italic;">
+        {{ configuracion.mensaje_ticket }}
+        <br>*** GRACIAS ***
+    </div>
+    {% endif %}
+
+    <!-- Espacio extra final para corte manual -->
+    <div style="height: 20mm;"></div>
+
+    <!-- Botón para reimprimir (Invisible al imprimir) -->
+    <button class="np"
+        style="width:100%; padding:15px; margin-top:15px; background:#333; color:#fff; border:none; font-weight:bold; cursor: pointer; border-radius: 5px;"
+        onclick="window.print()">
+        IMPRIMIR OTRA VEZ
+    </button>
+</body>
+
+</html>

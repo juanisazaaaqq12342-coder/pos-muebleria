@@ -1,0 +1,436 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="animate-slide-in d-flex flex-column gap-4 admin-catalog-layout">
+
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <div>
+        <h2 class="fw-bold m-0 text-dark" style="font-family: 'Playfair Display', serif;">Gestión de Catálogo</h2>
+        <p class="text-muted small m-0 text-uppercase tracking-widest">CONTROL MAESTRO DE INVENTARIO</p>
+    </div>
+  </div>
+
+  <!-- Nav Tabs -->
+  <div class="d-flex justify-content-between align-items-center mb-1">
+      <ul class="nav nav-pills bg-white p-2 rounded-pill shadow-sm border" id="adminTabs" role="tablist" style="width: fit-content;">
+        <li class="nav-item">
+          <button class="nav-link active fw-bold px-4 rounded-pill" id="prod-tab" data-bs-toggle="tab" data-bs-target="#prod-pane">
+              Muebles y Existencias
+          </button>
+        </li>
+        {% if not solo_inventario %}
+        <li class="nav-item ms-2">
+          <button class="nav-link fw-bold px-4 rounded-pill" id="cat-tab" data-bs-toggle="tab" data-bs-target="#cat-pane">
+              Categorías
+          </button>
+        </li>
+        {% endif %}
+      </ul>
+      
+      <!-- Quick Filter -->
+      <div class="d-flex gap-1 flex-wrap">
+          <a href="{{ url_for('admin', categoria_id='Todas') }}" 
+             class="btn btn-sm rounded-pill px-3 fw-bold {{ 'btn-primary' if cat_filtro == 'Todas' else 'btn-glass text-muted' }}">
+             Todas
+          </a>
+          {% for c in categorias %}
+          <a href="{{ url_for('admin', categoria_id=c.id) }}" 
+             class="btn btn-sm rounded-pill px-3 fw-bold {{ 'btn-primary' if cat_filtro == c.id else 'btn-glass text-muted' }}">
+             {{ c.nombre }}
+          </a>
+          {% endfor %}
+      </div>
+  </div>
+
+  <!-- Tab Content -->
+  <div class="tab-content flex-grow-1" id="adminTabsContent">
+
+    <!-- PRODUCTOS -->
+    <div class="tab-pane fade show active" id="prod-pane">
+      <div class="row g-4 align-items-stretch">
+        <div class="col-md-4">
+          <div class="glass-panel p-4 border-0 shadow-lg admin-register-card">
+            {% if solo_inventario %}
+            <h5 class="fw-bold mb-4 text-dark"><i class="bi bi-boxes text-accent me-2"></i>Rol Bodega</h5>
+            <div class="p-3 rounded-4 border bg-light">
+              <div class="fw-bold mb-2">Inventario Multisede</div>
+              <div class="small text-muted">Recibe mercancia, realiza conteo y ajusta stock por sede desde el boton <b>Stock</b>.</div>
+              <div class="small text-muted mt-2">No puedes crear productos, editar precios ni cambiar visibilidad.</div>
+            </div>
+            {% else %}
+            <h5 class="fw-bold mb-4 text-dark"><i class="bi bi-plus-lg text-accent me-2"></i>Registrar Nuevo</h5>
+            <form method="POST" enctype="multipart/form-data" class="d-flex flex-column admin-register-form">
+                <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+              <input type="hidden" name="tipo" value="producto">
+              <div class="mb-3">
+                <label class="form-label text-muted fw-bold small text-uppercase">Nombre</label>
+                <input type="text" name="nombre" class="form-control" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-muted fw-bold small text-uppercase">Precio $</label>
+                <input type="number" name="precio" class="form-control" required>
+              </div>
+              <div class="mb-4">
+                <label class="form-label text-muted fw-bold small text-uppercase">Grupo</label>
+                <select name="categoria_id" class="form-select" required>
+                  <option value="">-- Seleccionar --</option>
+                  {% for c in categorias %}
+                  <option value="{{c.id}}">{{c.nombre}}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-muted fw-bold small text-uppercase">Imagen</label>
+                <input type="file" name="imagen" class="form-control" accept="image/*">
+              </div>
+              <div class="admin-register-submit mt-auto pt-3">
+                <button class="btn btn-primary w-100 py-3 fw-bold shadow-accent">GUARDAR MUEBLE</button>
+              </div>
+            </form>
+            {% endif %}
+          </div>
+        </div>
+        
+        <div class="col-md-8">
+          <div class="glass-panel d-flex flex-column border-0 shadow-lg admin-table-card">
+            <div class="flex-grow-1 overflow-auto custom-scrollbar p-0">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="sticky-top bg-white border-bottom">
+                        <tr>
+                            <th class="ps-4">Imagen</th>
+                            <th>Producto</th>
+                            <th class="text-center">Stock Global</th>
+                            <th>Precio</th>
+                            <th class="text-end pe-4">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                      {% for p in productos %}
+                      <tr class="{{ 'opacity-50' if not p.activo }}">
+                          <td class="ps-4">
+                              <form method="POST" enctype="multipart/form-data" class="m-0">
+                                <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+                                <input type="hidden" name="tipo" value="update_imagen">
+                                <input type="hidden" name="producto_id" value="{{ p.id }}">
+                                <input type="file"
+                                       id="imgUpload_{{ p.id }}"
+                                       name="imagen"
+                                       class="d-none"
+                                       accept="image/*"
+                                       onchange="this.form.submit()">
+                                <label for="imgUpload_{{ p.id }}"
+                                       class="rounded shadow-sm border d-inline-flex align-items-center justify-content-center"
+                                       style="width: 48px; height: 48px; cursor: pointer;"
+                                       title="Clic para cambiar imagen">
+                                  {% if p.imagen_url %}
+                                  <img src="{{ producto_image_url(p.imagen_url) }}" class="rounded" style="width: 48px; height: 48px; object-fit: cover;">
+                                  {% else %}
+                                  <span class="bg-light rounded d-flex align-items-center justify-content-center text-muted w-100 h-100"><i class="bi bi-image"></i></span>
+                                  {% endif %}
+                                </label>
+                              </form>
+                          </td>
+                          <td>
+                              <div class="fw-bold text-dark">{{ p.nombre }}</div>
+                              <span class="text-muted small">{{ p.categoria_rel.nombre if p.categoria_rel else 'General' }}</span>
+                          </td>
+                          <td class="text-center">
+                              {% set st_total = p.inventarios|sum(attribute='cantidad') %}
+                              <span class="badge {{ 'bg-danger' if st_total <= 0 else 'bg-primary' }} rounded-pill px-3 fs-6">{{ st_total }}</span>
+                          </td>
+                          <td>
+                              {% if solo_inventario %}
+                              <div class="fw-bold text-primary">${{ "{:,.0f}".format(p.precio or 0) }}</div>
+                              {% else %}
+                              <form method="POST" class="d-flex">
+                                <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+                                <input type="hidden" name="tipo" value="update_precio">
+                                <input type="hidden" name="producto_id" value="{{ p.id }}">
+                                <div class="input-group input-group-sm">
+                                    <input type="number" name="precio" value="{{ p.precio }}" class="form-control fw-bold" style="width: 90px;">
+                                    <button class="btn btn-outline-primary"><i class="bi bi-save"></i></button>
+                                </div>
+                              </form>
+                              {% endif %}
+                          </td>
+                          <td class="text-end pe-4">
+                              <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-sm btn-dark px-3 rounded-pill"
+                                        data-bs-toggle="modal" data-bs-target="#modalStock_{{ p.id }}">
+                                    <i class="bi bi-box-seam me-1 text-accent"></i> Stock
+                                </button>
+                                {% if not solo_inventario %}
+                                <form method="POST" class="m-0">
+                                    <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+                                    <input type="hidden" name="tipo" value="toggle_producto">
+                                    <input type="hidden" name="producto_id" value="{{ p.id }}">
+                                    <button class="btn btn-sm {{ 'btn-success' if p.activo else 'btn-outline-danger' }} rounded-circle p-2" title="Visibilidad">
+                                        <i class="bi {{ 'bi-eye' if p.activo else 'bi-eye-slash' }}"></i>
+                                    </button>
+                                </form>
+                                <form action="{{ url_for('eliminar_producto_admin', prod_id=p.id) }}"
+                                      method="POST"
+                                      class="m-0"
+                                      onsubmit="return confirm('¿Eliminar este producto del catalogo?');">
+                                    <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+                                    <button class="btn btn-sm btn-outline-danger rounded-circle p-2" title="Eliminar producto">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                              </div>
+                          </td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if not solo_inventario %}
+    <!-- CATEGORIAS -->
+    <div class="tab-pane fade" id="cat-pane">
+      <div class="glass-panel p-4 p-md-5 d-flex flex-column border-0 category-manager-panel">
+           <div class="col-12 col-lg-7 col-xl-5 category-manager-content">
+             <div class="d-flex justify-content-between align-items-center mb-3">
+               <h5 class="fw-bold m-0 text-dark"><i class="bi bi-grid-1x2-fill text-accent me-2"></i>Grupos de Muebles</h5>
+               <span class="badge rounded-pill category-total-badge">{{ categorias|length }} grupos</span>
+             </div>
+             <p class="small text-muted mb-4">Organiza el catalogo por lineas para filtrar y administrar inventario con mayor rapidez.</p>
+
+             <div class="category-create-card mb-4">
+               <form action="{{ url_for('admin_categorias') }}" method="POST">
+                   <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+                 <div class="mb-0">
+                   <label class="small fw-bold text-uppercase text-muted mb-2">Nuevo grupo</label>
+                   <input type="text" name="nombre" class="form-control mb-3" required placeholder="Ej: Salas Premium">
+                   <button class="btn btn-primary w-100 py-3 fw-bold">CREAR GRUPO</button>
+                 </div>
+               </form>
+             </div>
+
+             <div class="category-list-wrap">
+                {% for c in categorias %}
+                <div class="category-list-item d-flex justify-content-between align-items-center">
+                    <span class="fw-bold text-dark">{{ c.nombre }}</span>
+                    <form action="{{ url_for('eliminar_categoria', id=c.id) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Borrar?')">
+                        <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+                        <button type="submit" class="btn category-delete-btn p-0" title="Eliminar grupo"><i class="bi bi-x-circle"></i></button>
+                    </form>
+                </div>
+                {% else %}
+                <div class="category-empty-state">Aun no hay grupos creados.</div>
+                {% endfor %}
+             </div>
+           </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ============================================================= -->
+<!-- UN MODAL DEDICADO POR PRODUCTO (Sin innerHTML ni clonación JS) -->
+<!-- ============================================================= -->
+{% for p in productos %}
+<div class="modal fade" id="modalStock_{{ p.id }}" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg overflow-hidden">
+      <div class="modal-header bg-dark text-white p-4">
+        <h5 class="modal-title fw-bold"><i class="bi bi-boxes me-2"></i>Stock: {{ p.nombre }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="text-center text-muted small text-uppercase mb-4">Ajuste de existencias físicas por sede</p>
+        
+        <form action="{{ url_for('actualizar_stock_masivo') }}" method="POST" class="stock-bulk-form">
+            <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+            <input type="hidden" name="producto_id" value="{{ p.id }}">
+
+            {% for s in sedes %}
+            {% set ns = namespace(stock_actual=0, stock_danado=0) %}
+            {% for inv in p.inventarios %}
+                {% if inv.sede_id == s.id %}
+                    {% set ns.stock_actual = inv.cantidad %}
+                    {% set ns.stock_danado = inv.cantidad_danado %}
+                {% endif %}
+            {% endfor %}
+
+            <div class="border rounded-4 p-3 mb-3 bg-light-subtle">
+                <input type="hidden" name="sede_id[]" value="{{ s.id }}">
+                <div class="fw-bold text-dark mb-2">
+                    <i class="bi bi-geo-alt-fill text-accent me-1"></i> {{ s.nombre }}
+                </div>
+                <div class="row g-2 align-items-end">
+                    <div class="col-4">
+                        <label class="small text-muted fw-bold text-uppercase">Disponible actual</label>
+                        <input type="number" class="form-control fw-bold text-center" value="{{ ns.stock_actual }}" readonly>
+                    </div>
+                    <div class="col-4">
+                        <label class="small text-muted fw-bold text-uppercase">Nuevo inventario</label>
+                        <input type="number"
+                               name="nuevo_inventario[]"
+                               class="form-control fw-bold text-center js-nuevo-inventario"
+                               value="0"
+                               min="0"
+                               step="1"
+                               data-stock-base="{{ ns.stock_actual }}">
+                    </div>
+                    <div class="col-4">
+                        <label class="small text-muted fw-bold text-uppercase">Disponible final</label>
+                        <input type="number"
+                               name="cantidad[]"
+                               class="form-control fw-bold text-center js-stock-final"
+                               value="{{ ns.stock_actual }}"
+                               min="0"
+                               data-stock-base="{{ ns.stock_actual }}">
+                    </div>
+                    <div class="col-12">
+                        <label class="small text-muted fw-bold text-uppercase">Dañado</label>
+                        <input type="number" name="cantidad_danado[]" class="form-control fw-bold text-center" value="{{ ns.stock_danado }}" min="0">
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <div class="d-grid mt-2">
+                <button class="btn btn-primary px-4 fw-bold" type="submit">
+                    <i class="bi bi-check2-all me-1"></i> GUARDAR TODAS LAS SEDES
+                </button>
+            </div>
+        </form>
+
+      </div>
+      <div class="modal-footer border-0 p-3">
+        <button type="button" class="btn btn-outline-dark w-100 py-2 fw-bold" data-bs-dismiss="modal">CERRAR</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+<style>
+  .admin-catalog-layout {
+    min-height: calc(100vh - 130px);
+  }
+  .admin-register-card,
+  .admin-table-card {
+    min-height: 560px;
+  }
+  .admin-register-form {
+    min-height: 460px;
+  }
+  .admin-register-submit {
+    position: sticky;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(4px);
+  }
+  .category-manager-panel {
+    background:
+      radial-gradient(circle at 0% 0%, rgba(194, 154, 106, 0.18), transparent 45%),
+      radial-gradient(circle at 100% 100%, rgba(15, 32, 66, 0.08), transparent 38%);
+  }
+  .category-manager-content {
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(194, 154, 106, 0.25);
+    border-radius: 20px;
+    padding: 1.25rem;
+    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+  }
+  .category-total-badge {
+    background: rgba(15, 32, 66, 0.9);
+    color: #fff;
+    padding: 0.45rem 0.8rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+  }
+  .category-create-card {
+    border: 1px solid rgba(194, 154, 106, 0.35);
+    border-radius: 16px;
+    padding: 1rem;
+    background: linear-gradient(145deg, #ffffff, #f8f2ea);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  }
+  .category-list-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .category-list-item {
+    padding: 0.8rem 0.95rem;
+    border: 1px solid rgba(15, 32, 66, 0.12);
+    border-radius: 14px;
+    background: #fff;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  }
+  .category-list-item:hover {
+    transform: translateY(-1px);
+    border-color: rgba(194, 154, 106, 0.5);
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+  }
+  .category-delete-btn {
+    color: #d64545;
+    font-size: 1.15rem;
+    line-height: 1;
+    border: 0;
+    background: transparent;
+  }
+  .category-delete-btn:hover {
+    color: #a81f1f;
+  }
+  .category-empty-state {
+    border: 1px dashed rgba(15, 32, 66, 0.2);
+    border-radius: 14px;
+    padding: 1rem;
+    text-align: center;
+    color: #64748b;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.75);
+  }
+  @media (max-width: 991px) {
+    .admin-register-card,
+    .admin-table-card,
+    .admin-register-form {
+      min-height: auto;
+    }
+    .admin-register-submit {
+      position: static;
+      background: transparent;
+      backdrop-filter: none;
+    }
+    .category-manager-content {
+      padding: 1rem;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.stock-bulk-form').forEach(function (form) {
+      form.querySelectorAll('.js-nuevo-inventario').forEach(function (nuevoInput) {
+        const row = nuevoInput.closest('.row');
+        if (!row) return;
+
+        const finalInput = row.querySelector('.js-stock-final');
+        if (!finalInput) return;
+
+        const base = parseInt(finalInput.dataset.stockBase || nuevoInput.dataset.stockBase || '0', 10) || 0;
+        const recalc = function () {
+          const nuevoValor = parseInt(nuevoInput.value || '0', 10);
+          const nuevoSeguro = Number.isNaN(nuevoValor) || nuevoValor < 0 ? 0 : nuevoValor;
+          finalInput.value = base + nuevoSeguro;
+        };
+
+        nuevoInput.addEventListener('input', recalc);
+        recalc();
+      });
+    });
+  });
+</script>
+
+{% endblock %}

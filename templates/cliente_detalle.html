@@ -1,0 +1,369 @@
+﻿{% extends "base.html" %}
+
+{% block content %}
+<div class="animate-slide-in">
+  {% set telefono_ok = telefono_whatsapp and (telefono_whatsapp|length >= 7) %}
+  {% set wa_msg_general = ('Hola ' ~ nombre_completo ~ ', te recordamos tus cuotas pendientes en ' ~ configuracion.nombre_empresa ~ '. Saldo pendiente: $' ~ '{:,.0f}'.format(total_pendiente or 0) ~ '. Gracias.') %}
+
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <div>
+      <a href="{{ url_for('clientes') }}" class="btn btn-sm btn-outline-dark rounded-pill fw-bold mb-2">
+        <i class="bi bi-arrow-left"></i> Volver a Clientes
+      </a>
+      <h2 class="fw-bold m-0 text-dark" style="font-family: 'Playfair Display', serif;">Historial de Cliente</h2>
+      <p class="text-muted small m-0 text-uppercase tracking-widest">Ficha completa de compras, cartera y pagos</p>
+    </div>
+    <div class="d-flex gap-2">
+      {% if telefono_ok %}
+      <a href="https://wa.me/{{ telefono_whatsapp }}?text={{ wa_msg_general|urlencode }}"
+         target="_blank" class="btn btn-success fw-bold rounded-pill px-3">
+        <i class="bi bi-whatsapp me-1"></i>Recordar Cuotas
+      </a>
+      {% else %}
+      <button class="btn btn-secondary fw-bold rounded-pill px-3" disabled>
+        <i class="bi bi-whatsapp me-1"></i>Sin telefono valido
+      </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm rounded-4 h-100">
+        <div class="card-body">
+          <div class="small text-muted text-uppercase fw-bold">Saldo Cartera</div>
+          <div class="fs-4 fw-bold text-danger">${{ '{:,.0f}'.format(cliente.deuda or 0) }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm rounded-4 h-100">
+        <div class="card-body">
+          <div class="small text-muted text-uppercase fw-bold">Total Compras</div>
+          <div class="fs-4 fw-bold text-dark">${{ '{:,.0f}'.format(total_compras or 0) }}</div>
+          <div class="small text-muted">{{ ventas|length }} ventas</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm rounded-4 h-100">
+        <div class="card-body">
+          <div class="small text-muted text-uppercase fw-bold">Total Creditos</div>
+          <div class="fs-4 fw-bold text-primary">${{ '{:,.0f}'.format(total_creditos or 0) }}</div>
+          <div class="small text-muted">{{ creditos|length }} creditos</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm rounded-4 h-100">
+        <div class="card-body">
+          <div class="small text-muted text-uppercase fw-bold">Total Abonos</div>
+          <div class="fs-4 fw-bold text-success">${{ '{:,.0f}'.format(total_abonos or 0) }}</div>
+          <div class="small text-muted">Saldo creditos: ${{ '{:,.0f}'.format(saldo_creditos or 0) }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm rounded-4 h-100">
+        <div class="card-header bg-white border-0 pb-0">
+          <h5 class="fw-bold mb-1"><i class="bi bi-person-vcard me-2 text-primary"></i>Datos Personales</h5>
+        </div>
+        <div class="card-body pt-2">
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <tbody>
+                <tr><th class="text-muted small">Nombre</th><td class="fw-bold">{{ cliente.nombre or '---' }}</td></tr>
+                <tr><th class="text-muted small">Apellido</th><td>{{ cliente.apellido or '---' }}</td></tr>
+                <tr><th class="text-muted small">CC / NIT</th><td>{{ cliente.documento or '---' }}</td></tr>
+                <tr><th class="text-muted small">Telefono</th><td>{{ cliente.telefono or '---' }}</td></tr>
+                <tr><th class="text-muted small">Direccion</th><td>{{ cliente.direccion or '---' }}</td></tr>
+                <tr><th class="text-muted small">Email</th><td>{{ cliente.email or '---' }}</td></tr>
+                <tr><th class="text-muted small">Fecha Registro</th><td>{{ cliente.fecha_registro.strftime('%d/%m/%Y %H:%M') if cliente.fecha_registro else '---' }}</td></tr>
+                <tr><th class="text-muted small">Notas</th><td>{{ cliente.notas or '---' }}</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm rounded-4 h-100">
+        <div class="card-header bg-white border-0 pb-0 d-flex justify-content-between align-items-center">
+          <h5 class="fw-bold mb-1"><i class="bi bi-people me-2 text-primary"></i>Referencias Personales</h5>
+          <span class="badge bg-light text-dark border">{{ referencias|length }} registradas</span>
+        </div>
+        <div class="card-body pt-2">
+          {% if referencias %}
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="small text-muted text-uppercase">
+                <tr>
+                  <th>#</th>
+                  <th>Nombre</th>
+                  <th>Celular</th>
+                  <th>Parentesco</th>
+                  <th>Direccion</th>
+                  <th>Credito</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for ref in referencias %}
+                {% set cr_ref = creditos_por_id.get(ref.credito_id) if creditos_por_id else None %}
+                <tr>
+                  <td class="fw-bold">{{ ref.orden or loop.index }}</td>
+                  <td>{{ ref.nombre or '---' }}</td>
+                  <td>{{ ref.celular or '---' }}</td>
+                  <td>{{ ref.parentesco or '---' }}</td>
+                  <td>{{ ref.direccion or '---' }}</td>
+                  <td>{{ cr_ref.codigo if cr_ref else '---' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-muted small">Este cliente no tiene referencias registradas.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-header bg-white border-0 pb-0 d-flex justify-content-between align-items-center">
+      <h5 class="fw-bold mb-1"><i class="bi bi-calendar-check me-2 text-primary"></i>Cuotas Pendientes</h5>
+      <span class="badge bg-warning-subtle text-dark border">Saldo: ${{ '{:,.0f}'.format(total_pendiente or 0) }}</span>
+    </div>
+    <div class="card-body pt-2">
+      {% if cuotas_pendientes %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="bg-light text-muted small text-uppercase">
+            <tr>
+              <th>Credito</th>
+              <th>Cuota</th>
+              <th>Vence</th>
+              <th class="text-end">Saldo</th>
+              <th>Estado</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cuota in cuotas_pendientes %}
+            {% set wa_msg = ('Hola ' ~ nombre_completo ~ ', te recordamos la cuota #' ~ cuota.numero_cuota ~ ' del credito ' ~ cuota.credito.codigo ~ ' por $' ~ '{:,.0f}'.format(cuota.saldo_pendiente or 0) ~ '. Fecha de pago: ' ~ cuota.fecha_vencimiento.strftime('%d/%m/%Y') ~ '. Gracias.') %}
+            <tr>
+              <td class="fw-bold">{{ cuota.credito.codigo }}</td>
+              <td>{{ cuota.numero_cuota }}/{{ cuota.credito.numero_cuotas }}</td>
+              <td>{{ cuota.fecha_vencimiento.strftime('%d/%m/%Y') }}</td>
+              <td class="text-end fw-bold text-danger">${{ '{:,.0f}'.format(cuota.saldo_pendiente or 0) }}</td>
+              <td><span class="badge bg-light text-dark border">{{ cuota.estado or 'Pendiente' }}</span></td>
+              <td class="text-center">
+                <div class="d-flex justify-content-center gap-1">
+                  <a href="{{ url_for('formato_credito', credito_id=cuota.credito.id) }}" target="_blank" class="btn btn-sm btn-outline-dark rounded-pill" title="Kardex">
+                    <i class="bi bi-file-earmark-text"></i>
+                  </a>
+                  {% if telefono_ok %}
+                  <a href="https://wa.me/{{ telefono_whatsapp }}?text={{ wa_msg|urlencode }}" target="_blank" class="btn btn-sm btn-success rounded-pill" title="Recordar por WhatsApp">
+                    <i class="bi bi-whatsapp"></i>
+                  </a>
+                  {% else %}
+                  <button class="btn btn-sm btn-secondary rounded-pill" disabled title="Telefono no valido">
+                    <i class="bi bi-whatsapp"></i>
+                  </button>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-muted small">No hay cuotas pendientes para este cliente.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-header bg-white border-0 pb-0">
+      <h5 class="fw-bold mb-1"><i class="bi bi-journal-text me-2 text-primary"></i>Historial de Creditos</h5>
+    </div>
+    <div class="card-body pt-2">
+      {% if creditos %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="bg-light text-muted small text-uppercase">
+            <tr>
+              <th>Codigo</th>
+              <th>Inicio</th>
+              <th>Frecuencia</th>
+              <th class="text-center">Cuotas</th>
+              <th class="text-end">Total</th>
+              <th class="text-end">Saldo</th>
+              <th>Estado</th>
+              <th class="text-center">Accion</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cr in creditos %}
+            <tr>
+              <td class="fw-bold">{{ cr.codigo }}</td>
+              <td>{{ cr.fecha_inicio.strftime('%d/%m/%Y') if cr.fecha_inicio else '---' }}</td>
+              <td>{{ cr.periodicidad or '---' }}</td>
+              <td class="text-center">{{ cr.numero_cuotas or 0 }}</td>
+              <td class="text-end">${{ '{:,.0f}'.format(cr.total_financiado or 0) }}</td>
+              <td class="text-end fw-bold {{ 'text-danger' if (cr.saldo_actual or 0) > 0 else 'text-success' }}">${{ '{:,.0f}'.format(cr.saldo_actual or 0) }}</td>
+              <td><span class="badge bg-light text-dark border">{{ cr.estado or '---' }}</span></td>
+              <td class="text-center">
+                <a href="{{ url_for('formato_credito', credito_id=cr.id) }}" target="_blank" class="btn btn-sm btn-outline-dark rounded-pill">
+                  <i class="bi bi-printer me-1"></i>Kardex
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-muted small">Este cliente no tiene creditos registrados.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-header bg-white border-0 pb-0">
+      <h5 class="fw-bold mb-1"><i class="bi bi-bag-check me-2 text-primary"></i>Historial de Compras</h5>
+    </div>
+    <div class="card-body pt-2">
+      {% if ventas %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="bg-light text-muted small text-uppercase">
+            <tr>
+              <th>Venta</th>
+              <th>Fecha</th>
+              <th>Metodo</th>
+              <th>Estado</th>
+              <th>Detalle</th>
+              <th class="text-end">Total</th>
+              <th class="text-center">Comprobante</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for v in ventas %}
+            <tr>
+              <td class="fw-bold">#{{ v.id }}</td>
+              <td>{{ v.fecha_cierre.strftime('%d/%m/%Y %H:%M') if v.fecha_cierre else (v.fecha_creacion.strftime('%d/%m/%Y %H:%M') if v.fecha_creacion else '---') }}</td>
+              <td>{{ v.metodo_pago or '---' }}</td>
+              <td>{{ v.estado or '---' }}</td>
+              <td>
+                {% if v.items %}
+                <div class="small">
+                  {% for item in v.items %}
+                  <div>{{ item.cantidad }} x {{ item.producto.nombre if item.producto else 'Producto eliminado' }} @ ${{ '{:,.0f}'.format(item.precio_unitario or 0) }}</div>
+                  {% endfor %}
+                </div>
+                {% else %}
+                <span class="text-muted small">Sin items</span>
+                {% endif %}
+              </td>
+              <td class="text-end fw-bold">${{ '{:,.0f}'.format(v.total or 0) }}</td>
+              <td class="text-center">
+                <a href="{{ url_for('imprimir_ticket', venta_id=v.id) }}" target="_blank" class="btn btn-sm btn-dark rounded-pill px-3">
+                  <i class="bi bi-printer me-1"></i>Imprimir
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-muted small">Este cliente no tiene compras registradas.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm rounded-4 h-100">
+        <div class="card-header bg-white border-0 pb-0">
+          <h5 class="fw-bold mb-1"><i class="bi bi-cash-stack me-2 text-primary"></i>Historial de Abonos</h5>
+        </div>
+        <div class="card-body pt-2">
+          {% if abonos %}
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="small text-muted text-uppercase">
+                <tr>
+                  <th>Fecha</th>
+                  <th>Credito</th>
+                  <th>Cuota</th>
+                  <th class="text-end">Monto</th>
+                  <th>Usuario</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for ab in abonos %}
+                <tr>
+                  <td>{{ ab.fecha.strftime('%d/%m/%Y %H:%M') if ab.fecha else '---' }}</td>
+                  <td>{{ ab.credito.codigo if ab.credito else '---' }}</td>
+                  <td>{{ ab.numero_cuota or '---' }}</td>
+                  <td class="text-end fw-bold text-success">${{ '{:,.0f}'.format(ab.monto or 0) }}</td>
+                  <td>{{ ab.usuario.username if ab.usuario else '---' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-muted small">No hay abonos registrados.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm rounded-4 h-100">
+        <div class="card-header bg-white border-0 pb-0">
+          <h5 class="fw-bold mb-1"><i class="bi bi-clock-history me-2 text-primary"></i>Movimientos de Cartera</h5>
+        </div>
+        <div class="card-body pt-2">
+          {% if movimientos %}
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="small text-muted text-uppercase">
+                <tr>
+                  <th>Fecha</th>
+                  <th>Tipo</th>
+                  <th class="text-end">Monto</th>
+                  <th>Nota</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for mv in movimientos %}
+                {% set es_cargo = (mv.tipo == 'cargo') %}
+                <tr>
+                  <td>{{ mv.fecha.strftime('%d/%m/%Y %H:%M') if mv.fecha else '---' }}</td>
+                  <td><span class="badge {{ 'bg-danger' if es_cargo else 'bg-success' }}">{{ mv.tipo or '---' }}</span></td>
+                  <td class="text-end fw-bold {{ 'text-danger' if es_cargo else 'text-success' }}">${{ '{:,.0f}'.format(mv.monto or 0) }}</td>
+                  <td>{{ mv.nota or '---' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-muted small">No hay movimientos de cartera para este cliente.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8">
+  <title>{{ configuracion.nombre_empresa }} | Luxury POS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- Premium Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+
+<body>
+
+  <!-- TOP NAVBAR -->
+  <nav class="topnav navbar navbar-expand-md shadow-sm">
+    <!-- Brand -->
+    <a class="topnav-brand navbar-brand d-flex align-items-center gap-3 ps-4" href="{{ url_for('index') }}">
+      <div class="brand-icon-wrapper">
+        <img src="{{ url_for('static', filename='img/logo_muebleria.svg') }}" alt="Logo Muebleria La Mejor" class="brand-logo-muebleria">
+      </div>
+      <div class="d-flex flex-column lh-1">
+        <span class="fs-4 fw-bold text-dark" style="font-family: 'Playfair Display', serif; letter-spacing: -0.5px;">{{ configuracion.nombre_empresa }}</span>
+        <span class="text-muted text-uppercase fw-bold tracking-widest" style="font-size: 0.72rem;">Luxury Suite</span>
+      </div>
+    </a>
+
+    <!-- Mobile toggle -->
+    <button class="navbar-toggler border-0 ms-auto me-3 p-2 bg-light rounded-circle" type="button" data-bs-toggle="collapse"
+      data-bs-target="#topNavMenu">
+      <i class="bi bi-list fs-4 text-dark"></i>
+    </button>
+
+    <div class="collapse navbar-collapse" id="topNavMenu">
+
+      <!-- Main links -->
+      <ul class="navbar-nav me-auto gap-0 ms-lg-4">
+        {% if session['rol'] in ['admin', 'vendedor'] %}
+        <li class="nav-item">
+          <a href="{{ url_for('punto_venta') }}"
+            class="nav-link topnav-link {% if request.endpoint=='punto_venta' %}active{% endif %}">
+            <i class="bi bi-shop"></i> Boutique POS
+          </a>
+        </li>
+        {% endif %}
+
+        {% if session['rol'] in ['admin', 'cobrador'] %}
+        <li class="nav-item">
+          <a href="{{ url_for('cobranzas') }}"
+            class="nav-link topnav-link {% if request.endpoint=='cobranzas' %}active{% endif %}">
+            <i class="bi bi-cash-coin"></i> Cartera
+          </a>
+        </li>
+        {% endif %}
+
+        {% if session['rol'] in ['admin', 'bodega'] %}
+        <li class="nav-item">
+          <a href="{{ url_for('admin') }}"
+            class="nav-link topnav-link {% if request.endpoint=='admin' %}active{% endif %}">
+            <i class="bi bi-boxes"></i> Inventario
+          </a>
+        </li>
+        {% endif %}
+        
+        <!-- Sede Switcher -->
+        {% if session['user_id'] %}
+        <li class="nav-item dropdown ms-lg-3">
+          <a class="nav-link dropdown-toggle topnav-link text-accent fw-bold" href="#" data-bs-toggle="dropdown">
+            <i class="bi bi-building"></i> {{ g.sede_nombre or 'Sede Principal' }}
+          </a>
+          <ul class="dropdown-menu border-0 shadow-lg mt-3 p-2 rounded-4">
+            <li class="p-2 small text-muted text-uppercase tracking-widest fw-bold" style="font-size: 0.72rem;">Cambiar Sucursal</li>
+            {% for s in g.todas_sedes %}
+            <li><a class="dropdown-item rounded-3 py-2 {{ 'active' if session['sede_id'] == s.id }}" href="{{ url_for('seleccionar_sede', sede_id=s.id) }}">
+              <i class="bi bi-geo-alt me-2"></i>{{ s.nombre }}
+            </a></li>
+            {% endfor %}
+          </ul>
+        </li>
+
+        {% if request.endpoint != 'punto_venta' %}
+        <li class="nav-item topnav-search-item ms-lg-2">
+          <form class="topnav-global-search" onsubmit="return runQuickAccess(event)">
+            <input id="quickAccessInput" type="search" list="quickAccessList" placeholder="Ir a: productos, clientes, ventas...">
+            <datalist id="quickAccessList">
+              <option value="Productos"></option>
+              <option value="Inventario"></option>
+              <option value="Punto de venta"></option>
+              <option value="Clientes"></option>
+              <option value="cliente: maria"></option>
+              <option value="producto: colchon matrimonial"></option>
+              <option value="Ventas"></option>
+              <option value="Cartera"></option>
+              <option value="Cobranzas"></option>
+              {% if session['rol'] == 'admin' %}
+              <option value="Usuarios"></option>
+              <option value="Sedes"></option>
+              <option value="Reportes"></option>
+              <option value="Caja"></option>
+              <option value="Logistica"></option>
+              {% endif %}
+            </datalist>
+            <button type="submit" title="Buscar">
+              <i class="bi bi-search"></i>
+            </button>
+          </form>
+        </li>
+        {% endif %}
+        {% endif %}
+
+        {% if session['rol'] == 'admin' %}
+        <!-- Admin Dropdown -->
+        <li class="nav-item dropdown">
+          <a class="nav-link topnav-link dropdown-toggle {% if request.endpoint in ['admin','sedes','usuarios','clientes','caja','reportes','admin_configuracion'] %}active{% endif %}"
+            href="#" data-bs-toggle="dropdown">
+            <i class="bi bi-shield-lock"></i> Gestión Administrativa
+          </a>
+          <ul class="dropdown-menu topnav-dropdown shadow-xl border-0 mt-2 p-2">
+            <li><h6 class="dropdown-header text-uppercase tracking-widest small opacity-50 mb-1">Operaciones</h6></li>
+            <li><a class="dropdown-item rounded-3" href="{{ url_for('sedes') }}"><i class="bi bi-building me-2 text-accent"></i>Sucursales</a></li>
+            <li><a class="dropdown-item rounded-3" href="{{ url_for('logistica') }}"><i class="bi bi-truck me-2 text-accent"></i>Despachos Logísticos</a></li>
+            <li><a class="dropdown-item rounded-3" href="{{ url_for('admin') }}"><i class="bi bi-box-seam me-2 text-accent"></i>Catálogo & Stock</a></li>
+            
+            <li><hr class="dropdown-divider opacity-10"></li>
+            <li><h6 class="dropdown-header text-uppercase tracking-widest small opacity-50 mb-1">Finanzas & Datos</h6></li>
+            <li><a class="dropdown-item rounded-3" href="{{ url_for('caja') }}"><i class="bi bi-wallet2 me-2 text-primary"></i>Cierre de Caja</a></li>
+            <li><a class="dropdown-item rounded-3" href="{{ url_for('reportes') }}"><i class="bi bi-graph-up-arrow me-2 text-primary"></i>Business Intelligence</a></li>
+            <li><a class="dropdown-item rounded-3" href="{{ url_for('historial_ventas') }}"><i class="bi bi-clock-history me-2 text-primary"></i>Historial de Ventas</a></li>
+            
+            <li><hr class="dropdown-divider opacity-10"></li>
+            <li><h6 class="dropdown-header text-uppercase tracking-widest small opacity-50 mb-1">Seguridad & CRM</h6></li>
+            <li><a class="dropdown-item rounded-3" href="{{ url_for('usuarios') }}"><i class="bi bi-people me-2 text-dark"></i>Usuarios</a></li>
+            <li><a class="dropdown-item rounded-3" href="{{ url_for('clientes') }}"><i class="bi bi-person-badge me-2 text-dark"></i>Historial de Clientes</a></li>
+            
+            <li><hr class="dropdown-divider opacity-10"></li>
+            <li><a class="dropdown-item rounded-3" href="{{ url_for('admin_configuracion') }}"><i class="bi bi-sliders me-2"></i>Ajustes de Marca</a></li>
+            <li><a class="dropdown-item rounded-3 text-success fw-bold p-3 bg-success-subtle mt-1" href="{{ url_for('backup_db') }}"><i class="bi bi-database-down me-2"></i>RESPALDO INTEGRAL</a></li>
+          </ul>
+        </li>
+        {% endif %}
+      </ul>
+
+      <ul class="navbar-nav ms-auto align-items-center gap-1 pe-2">
+        <li class="nav-item">
+          <div class="user-profile-badge d-flex align-items-center gap-3 px-3 py-1">
+            <div class="lh-1 text-end d-none d-lg-block">
+              <div class="fw-bold text-dark" style="font-size:0.85rem;">{{ session['username'] }}</div>
+              <div class="text-accent text-uppercase fw-bold" style="font-size:0.72rem; letter-spacing: 0.1em">{{ session['rol'] }}</div>
+            </div>
+            <div class="user-avatar-circle">
+                {{ session['username'][0].upper() }}
+            </div>
+          </div>
+        </li>
+        <li class="nav-item ms-2">
+          <a href="{{ url_for('logout') }}" class="btn-logout-minimal" title="Cerrar Sesión">
+            <i class="bi bi-power"></i>
+          </a>
+        </li>
+      </ul>
+
+    </div>
+  </nav>
+
+  <main class="main-content">
+    {% with m = get_flashed_messages(with_categories=true) %}
+    {% if m %}
+    {% set shown = namespace(keys=[]) %}
+    {% for cat, msg in m %}
+    {% set alert_key = cat ~ '|' ~ msg %}
+    {% if alert_key not in shown.keys %}
+    <div class="alert alert-{{cat if cat != 'message' else 'primary'}} alert-dismissible fade show shadow-sm border-0 mb-4 animate-slide-in">
+        <i class="bi bi-info-circle-fill me-2"></i> {{ msg }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% set _ = shown.keys.append(alert_key) %}
+    {% endif %}
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    {% if session.get('user_id') and request.endpoint != 'login' %}
+    <div class="global-search-shell animate-slide-in">
+      <form class="global-search-form" onsubmit="return runUnifiedSearch(event)">
+        <input id="globalSearchInput"
+               type="search"
+               class="global-search-input"
+               placeholder="Buscar cliente, producto, venta, credito..."
+               value="{{ request.args.get('q', '') if request.args else '' }}">
+
+        <select id="globalSearchScope" class="global-search-select">
+          <option value="all">Todas las Busquedas</option>
+          <option value="clients">Clientes</option>
+          <option value="products">Productos</option>
+          <option value="sales">Ventas</option>
+          <option value="credits">Creditos</option>
+        </select>
+
+        <select id="globalSearchModule" class="global-search-select">
+          <option value="all_modules">Todas las Interfaces</option>
+          {% if session['rol'] in ['admin', 'vendedor'] %}
+          <option value="boutique">Boutique POS</option>
+          {% endif %}
+          {% if session['rol'] in ['admin', 'cobrador'] %}
+          <option value="cartera">Cartera</option>
+          {% endif %}
+          {% if session['rol'] in ['admin', 'bodega'] %}
+          <option value="admin_catalogo">Gestion Catalogo</option>
+          {% endif %}
+          {% if session['rol'] == 'admin' %}
+          <option value="admin_clientes">Gestion Clientes</option>
+          <option value="admin_ventas">Gestion Ventas</option>
+          <option value="admin_reportes">Gestion Reportes</option>
+          <option value="admin_caja">Gestion Caja</option>
+          <option value="admin_usuarios">Gestion Usuarios</option>
+          <option value="admin_sedes">Gestion Sedes</option>
+          <option value="admin_logistica">Gestion Logistica</option>
+          {% endif %}
+        </select>
+
+        <button type="submit" class="global-search-btn">
+          <i class="bi bi-search"></i> Buscar
+        </button>
+      </form>
+    </div>
+    {% endif %}
+    
+    {% block content %}{% endblock %}
+  </main>
+
+  <div class="toast-container position-fixed bottom-0 end-0 p-4"></div>
+  
+  <audio id="audioNotif"
+    src="https://codeskulptor-demos.commondatastorage.googleapis.com/GalaxyInvaders/pause.mp3"></audio>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const isPosPage = "{{ request.endpoint or '' }}" === "punto_venta";
+
+    function isTypingContext(el) {
+      if (!el) return false;
+      const tag = (el.tagName || '').toLowerCase();
+      if (el.isContentEditable) return true;
+      return tag === 'input' || tag === 'textarea' || tag === 'select';
+    }
+
+    function runQuickAccess(event) {
+      if (event) event.preventDefault();
+      if (isPosPage) {
+        // Bloqueo total en POS para evitar saltos involuntarios de interfaz.
+        return false;
+      }
+      const input = document.getElementById('quickAccessInput');
+      if (!input) return false;
+      const query = (input?.value || '').trim();
+      if (!query) {
+        showToast('Escribe a donde quieres ir.', 'warning');
+        return false;
+      }
+
+      const q = query.toLowerCase();
+      const isAdmin = "{{ session['rol'] }}" === "admin";
+      const isCobrador = "{{ session['rol'] }}" === "cobrador";
+      const isBodega = "{{ session['rol'] }}" === "bodega";
+
+      // Prefijos opcionales: cliente:, producto:, venta:, cartera:
+      if (q.startsWith("cliente:")) {
+        const term = query.substring(query.indexOf(":") + 1).trim();
+        if (isAdmin) {
+          window.location.href = "{{ url_for('clientes') }}" + "?q=" + encodeURIComponent(term || query);
+        } else if (isCobrador) {
+          window.location.href = "{{ url_for('cobranzas') }}" + "?filtro=todos&q=" + encodeURIComponent(term || query);
+        } else if (isBodega) {
+          window.location.href = "{{ url_for('admin') }}" + "?q=" + encodeURIComponent(term || query);
+        } else {
+          window.location.href = "{{ url_for('punto_venta') }}" + "?categoria=Todas&q=" + encodeURIComponent(term || query);
+        }
+        return false;
+      }
+
+      if (q.startsWith("venta:") && isAdmin) {
+        const term = query.substring(query.indexOf(":") + 1).trim();
+        window.location.href = "{{ url_for('historial_ventas') }}" + "?q=" + encodeURIComponent(term || query);
+        return false;
+      }
+
+      if ((q.startsWith("cartera:") || q.startsWith("credito:") || q.startsWith("crédito:")) && (isAdmin || isCobrador)) {
+        const term = query.substring(query.indexOf(":") + 1).trim();
+        window.location.href = "{{ url_for('cobranzas') }}" + "?filtro=todos&q=" + encodeURIComponent(term || query);
+        return false;
+      }
+
+      // Navegación por módulos exactos
+      if (["clientes", "cliente"].includes(q) && isAdmin) {
+        window.location.href = "{{ url_for('clientes') }}";
+        return false;
+      }
+      if (["ventas", "venta", "historial"].includes(q) && isAdmin) {
+        window.location.href = "{{ url_for('historial_ventas') }}";
+        return false;
+      }
+      if (["cartera", "cobranzas", "credito", "crédito", "cuotas"].includes(q) && (isAdmin || isCobrador)) {
+        window.location.href = "{{ url_for('cobranzas') }}?filtro=todos";
+        return false;
+      }
+      if (["inventario", "productos", "producto", "stock"].includes(q) && (isAdmin || isBodega)) {
+        window.location.href = "{{ url_for('admin') }}";
+        return false;
+      }
+
+      // Por defecto: búsqueda de producto en POS (ej: "colchon matrimonial")
+      if (isBodega) {
+        window.location.href = "{{ url_for('admin') }}" + "?q=" + encodeURIComponent(query);
+      } else {
+        window.location.href = "{{ url_for('punto_venta') }}" + "?categoria=Todas&q=" + encodeURIComponent(query);
+      }
+      return false;
+    }
+
+    function runUnifiedSearch(event) {
+      if (event) event.preventDefault();
+      const input = document.getElementById('globalSearchInput');
+      const scope = document.getElementById('globalSearchScope');
+      const module = document.getElementById('globalSearchModule');
+      if (!input || !scope || !module) return false;
+
+      const raw = (input.value || '').trim();
+      const scopeVal = scope.value || 'all';
+      const moduleVal = module.value || 'all_modules';
+      const rol = "{{ session.get('rol', '') }}";
+
+      if (!raw && moduleVal === 'all_modules') {
+        showToast('Escribe algo para buscar.', 'warning');
+        return false;
+      }
+
+      const prefixMap = {
+        clients: 'cliente',
+        products: 'producto',
+        sales: 'venta',
+        credits: 'cartera'
+      };
+      let term = raw;
+      if (raw && scopeVal !== 'all') {
+        const p = prefixMap[scopeVal];
+        if (p && raw.indexOf(':') === -1) term = p + ': ' + raw;
+      }
+
+      if (moduleVal === 'boutique') {
+        if (!(rol === 'admin' || rol === 'vendedor')) {
+          showToast('No tienes permisos para Boutique POS.', 'warning');
+          return false;
+        }
+        const base = "{{ url_for('punto_venta') }}";
+        window.location.href = raw ? (base + "?categoria=Todas&q=" + encodeURIComponent(raw)) : base;
+        return false;
+      }
+      if (moduleVal === 'cartera') {
+        const base = "{{ url_for('cobranzas') }}";
+        window.location.href = raw ? (base + "?filtro=todos&q=" + encodeURIComponent(raw)) : (base + "?filtro=todos");
+        return false;
+      }
+      if (moduleVal === 'admin_catalogo') {
+        if (!(rol === 'admin' || rol === 'bodega')) {
+          showToast('No tienes permisos para Gestion Catalogo.', 'warning');
+          return false;
+        }
+        window.location.href = raw ? ("{{ url_for('admin') }}?q=" + encodeURIComponent(raw)) : "{{ url_for('admin') }}";
+        return false;
+      }
+      if (moduleVal === 'admin_clientes') {
+        if (rol !== 'admin') { showToast('No tienes permisos para Gestion Clientes.', 'warning'); return false; }
+        window.location.href = raw ? ("{{ url_for('clientes') }}?q=" + encodeURIComponent(raw)) : "{{ url_for('clientes') }}";
+        return false;
+      }
+      if (moduleVal === 'admin_ventas') {
+        if (rol !== 'admin') { showToast('No tienes permisos para Gestion Ventas.', 'warning'); return false; }
+        window.location.href = raw ? ("{{ url_for('historial_ventas') }}?q=" + encodeURIComponent(raw)) : "{{ url_for('historial_ventas') }}";
+        return false;
+      }
+      if (moduleVal === 'admin_reportes') {
+        if (rol !== 'admin') { showToast('No tienes permisos para Gestion Reportes.', 'warning'); return false; }
+        window.location.href = "{{ url_for('reportes') }}";
+        return false;
+      }
+      if (moduleVal === 'admin_caja') {
+        if (rol !== 'admin') { showToast('No tienes permisos para Gestion Caja.', 'warning'); return false; }
+        window.location.href = "{{ url_for('caja') }}";
+        return false;
+      }
+      if (moduleVal === 'admin_usuarios') {
+        if (rol !== 'admin') { showToast('No tienes permisos para Gestion Usuarios.', 'warning'); return false; }
+        window.location.href = "{{ url_for('usuarios') }}";
+        return false;
+      }
+      if (moduleVal === 'admin_sedes') {
+        if (rol !== 'admin') { showToast('No tienes permisos para Gestion Sedes.', 'warning'); return false; }
+        window.location.href = "{{ url_for('sedes') }}";
+        return false;
+      }
+      if (moduleVal === 'admin_logistica') {
+        if (rol !== 'admin') { showToast('No tienes permisos para Gestion Logistica.', 'warning'); return false; }
+        window.location.href = "{{ url_for('logistica') }}";
+        return false;
+      }
+
+      if (!raw) {
+        showToast('Escribe algo para buscar.', 'warning');
+        return false;
+      }
+      window.location.href = "{{ url_for('buscar_rapido') }}" + "?q=" + encodeURIComponent(term);
+      return false;
+    }
+
+    document.addEventListener('keydown', function (e) {
+      if (isPosPage) return;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        document.getElementById('quickAccessInput')?.focus();
+      }
+    });
+
+    function showToast(message, type = 'primary') {
+      const container = document.querySelector('.toast-container');
+      const id = 'toast-' + Date.now();
+      const html = `
+        <div id="${id}" class="toast align-items-center text-white bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+          <div class="d-flex">
+            <div class="toast-body">
+              <i class="bi bi-info-circle me-2"></i> ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+          </div>
+        </div>
+      `;
+      container.insertAdjacentHTML('beforeend', html);
+      const toastEl = document.getElementById(id);
+      const toast = new bootstrap.Toast(toastEl, { delay: 5000 });
+      toast.show();
+      toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+    }
+
+    function notificarAlertasCartera() {
+      const rol = "{{ session.get('rol', '') }}";
+      if (!(rol === 'admin' || rol === 'cobrador')) return;
+      const key = "alertas_cartera_" + new Date().toISOString().slice(0, 10);
+      if (sessionStorage.getItem(key)) return;
+
+      fetch('/api/alertas_cobro')
+        .then(r => r.json())
+        .then(d => {
+          const hoy = Number(d.n_hoy || 0);
+          const vencidas = Number(d.n_vencidas || 0);
+          const prox3 = Number(d.n_proximas_3 || 0);
+          const prox7 = Number(d.n_proximas_7 || 0);
+          if (!(hoy || vencidas || prox3 || prox7)) return;
+
+          let msg = `Cartera: hoy ${hoy} cuota(s)`;
+          if (vencidas > 0) msg += `, vencidas ${vencidas}`;
+          if (prox3 > 0) msg += `, proximas 72h ${prox3}`;
+          if (prox7 > 0) msg += `, semana ${prox7}`;
+          showToast(msg, (vencidas > 0 ? 'danger' : 'warning'));
+          sessionStorage.setItem(key, '1');
+        })
+        .catch(() => {});
+    }
+
+    document.addEventListener('DOMContentLoaded', notificarAlertasCartera);
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+
+</html>

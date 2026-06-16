@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="animate-slide-in">
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h2 class="fw-bold m-0 text-dark" style="font-family: 'Playfair Display', serif;">Control de Egresos</h2>
+            <p class="text-muted small m-0 text-uppercase tracking-widest">Gestión de gastos operativos y mantenimiento</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Formulario de Gasto -->
+        <div class="col-md-5">
+            <div class="glass-panel p-4 h-100 shadow-lg border-0">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <div class="bg-danger bg-opacity-10 text-danger p-3 rounded-circle">
+                        <i class="bi bi-cash-stack fs-3"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold m-0 text-dark">Registrar Salida</h4>
+                        <p class="text-muted m-0 small">Débito de caja menor</p>
+                    </div>
+                </div>
+
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+                    <div class="mb-3">
+                        <label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Descripción del Gasto</label>
+                        <input type="text" name="descripcion" class="form-control border-accent-subtle bg-light py-2 fw-bold" 
+                            placeholder="Ej: Mantenimiento Showroom, Pago Servicios..." required>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-7">
+                            <label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Monto ($)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-accent-subtle">$</span>
+                                <input type="number" name="monto" class="form-control border-accent-subtle bg-light fw-bold" required>
+                            </div>
+                        </div>
+                        <div class="col-5">
+                            <label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Categoría</label>
+                            <select name="tipo_gasto" class="form-select border-accent-subtle bg-light fw-bold">
+                                <option value="operativo">Operativo</option>
+                                <option value="logistica">Logística</option>
+                                <option value="nomina">Nómina</option>
+                                <option value="mantenimiento">Mantenimiento</option>
+                                <option value="publicidad">Publicidad</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary w-100 py-3 fw-bold shadow-accent tracking-widest text-uppercase">
+                        <i class="bi bi-save-fill me-2"></i> REGISTRAR GASTO
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Listado de Gastos -->
+        <div class="col-md-7">
+            <div class="glass-panel p-0 shadow-lg border-0 h-100 overflow-hidden d-flex flex-column">
+                <div class="p-4 border-bottom bg-white bg-opacity-50">
+                    <h5 class="fw-bold m-0 text-dark" style="font-family: 'Playfair Display', serif;">Egresos de Hoy</h5>
+                </div>
+                
+                <div class="flex-grow-1 overflow-auto p-4">
+                    {% if gastos %}
+                    <div class="d-flex flex-column gap-3">
+                        {% for g in gastos %}
+                        <div class="p-3 rounded-4 bg-white bg-opacity-50 border-start border-4 border-danger shadow-sm d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-bold text-dark fs-5">{{ g.descripcion }}</div>
+                                <div class="d-flex align-items-center gap-2 mt-1">
+                                    <span class="badge bg-light text-muted border fw-normal text-uppercase small">{{ g.tipo_gasto }}</span>
+                                    <span class="small text-muted"><i class="bi bi-clock me-1"></i> {{ g.fecha.strftime('%H:%M') }}</span>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-4">
+                                <div class="text-danger fw-bold fs-4">-${{ "{:,.0f}".format(g.monto) }}</div>
+                                <form action="{{ url_for('caja') }}" method="POST" class="m-0">
+                                    <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+                                    <input type="hidden" name="eliminar_gasto" value="1">
+                                    <input type="hidden" name="gasto_id" value="{{ g.id }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger border-0 rounded-circle p-2" onclick="return confirm('¿Eliminar este registro de gasto?');">
+                                        <i class="bi bi-trash-fill fs-5"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <div class="opacity-25 display-1 mb-3"><i class="bi bi-wallet2"></i></div>
+                        <p class="fw-bold">No se registran salidas de dinero el día de hoy.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

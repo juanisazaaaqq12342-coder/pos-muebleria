@@ -1,0 +1,1117 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- Mensajes Flash -->
+<!-- Alertas de éxito de venta -->
+{% if request.args.get('last_venta_id') %}
+<div class="alert alert-success pos-success-banner alert-dismissible fade show shadow-lg d-flex align-items-center justify-content-between mb-4 rounded-4 animate-slide-in" role="alert">
+    <div class="d-flex align-items-center gap-2">
+        <span class="pos-success-icon"><i class="bi bi-patch-check-fill"></i></span>
+        <strong class="pos-success-text">Orden #{{ request.args.get('last_venta_id') }} procesada exitosamente.</strong>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('imprimir_ticket', venta_id=request.args.get('last_venta_id')) }}" target="_blank" class="btn btn-sm btn-light fw-bold shadow-sm rounded-pill px-3">
+            <i class="bi bi-printer me-1"></i> Imprimir Ticket
+        </a>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+</div>
+{% endif %}
+
+<div class="row h-100 g-3">
+  <!-- Izquierda: Catálogo y Filtros -->
+  <div class="col-lg-8 col-md-7 border-end d-flex flex-column h-100 pb-3">
+    
+    <div class="d-flex flex-wrap justify-content-between mb-4 align-items-center gap-3 animate-slide-in pos-top-toolbar">
+      <div class="d-flex align-items-center gap-2">
+           <div class="icon-shape bg-primary text-white rounded-3 p-2 shadow-sm">
+               <i class="bi bi-shop fs-5"></i>
+           </div>
+           <div>
+               <h4 class="fw-bold m-0 text-dark">Punto de Venta</h4>
+               <p class="text-muted small m-0 text-uppercase tracking-widest"><i class="bi bi-geo-alt-fill text-accent me-1"></i>{{ sede.nombre }}</p>
+           </div>
+      </div>
+      
+      <!-- Selector de Sede Compacto -->
+      <div class="btn-group shadow-sm pos-sede-switcher">
+        <button type="button" class="btn btn-white border px-3 fw-bold dropdown-toggle" data-bs-toggle="dropdown">
+          <i class="bi bi-building me-2 text-primary"></i> Cambiar Sede
+        </button>
+        <ul class="dropdown-menu border-0 shadow-lg p-2 rounded-4">
+          {% for s in g.todas_sedes %}
+          <li><a class="dropdown-item rounded-3 py-2 {{ 'active' if sede.id == s.id }}" href="{{ url_for('seleccionar_sede', sede_id=s.id) }}">
+            {{ s.nombre }}
+          </a></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <!-- Pestañas Categorías -->
+    <div class="d-flex gap-2 overflow-auto pb-3 mb-4 sticky-top animate-fade-in custom-scrollbar pos-categories-sticky" style="background: var(--bg-main);">
+      {% set base=url_for('punto_venta') %}
+      {% set qsuffix = ('&q=' ~ (search_q|urlencode)) if search_q else '' %}
+      <a href="{{ base }}?categoria=Todas{{ qsuffix }}"
+        class="btn btn-sm rounded-pill px-4 py-2 fw-bold shadow-sm transition-all pos-category-btn {{ 'is-active' if categoria_actual=='Todas' else '' }}">
+        Ver Todo
+      </a>
+      {% for cat in categorias %}
+      <a href="{{ base }}?categoria={{ cat }}{{ qsuffix }}"
+        class="btn btn-sm rounded-pill px-4 py-2 fw-bold shadow-sm transition-all pos-category-btn {{ 'is-active' if categoria_actual==cat else '' }}">
+        {{ cat }}
+      </a>
+      {% endfor %}
+    </div>
+
+    {% if search_q %}
+    <div class="alert alert-info border-0 rounded-4 shadow-sm py-2 px-3 mb-3">
+      Mostrando resultados para: <strong>{{ search_q }}</strong>
+    </div>
+    {% endif %}
+
+    <!-- Grid Productos -->
+    <div class="row g-3 overflow-auto pe-2 custom-scrollbar flex-grow-1 animate-fade-in delay-1" style="max-height: 70vh;">
+      {% for prod in productos %}
+      {% if categoria_actual == 'Todas' or (prod.categoria_rel and prod.categoria_rel.nombre == categoria_actual) %}
+      
+      {# FIX: Calcular stock usando namespace para evitar bug de scope en Jinja2 #}
+      {% set ns = namespace(stock=0) %}
+      {% for inv in prod.inventarios %}
+          {% if inv.sede_id == sede.id %}
+              {% set ns.stock = inv.cantidad %}
+          {% endif %}
+      {% endfor %}
+      
+      <div class="col-6 col-md-4 col-xl-3">
+        <div class="card glass-panel h-100 p-0 border-0 overflow-hidden d-flex flex-column hover-lift {{ 'grayscale opacity-75' if ns.stock <= 0 }}" 
+             style="cursor: pointer;"
+             data-prod-id="{{ prod.id }}"
+             data-prod-nombre="{{ prod.nombre }}"
+             data-prod-precio="{{ prod.precio }}"
+             data-prod-stock="{{ ns.stock }}"
+             onclick="abrirModal(this)">
+          
+          <div class="position-relative" style="height: 180px; background: #fbfbfb;">
+            {% if prod.imagen_url %}
+            <img src="{{ producto_image_url(prod.imagen_url) }}" class="w-100 h-100" style="object-fit: contain; padding: 10px;">
+            {% else %}
+            <div class="w-100 h-100 d-flex align-items-center justify-content-center text-muted opacity-25">
+                <i class="bi bi-image fs-1"></i>
+            </div>
+            {% endif %}
+            
+            <div class="position-absolute top-0 end-0 p-2">
+              {% if ns.stock > 0 %}
+              <span class="badge bg-success shadow-sm">{{ ns.stock }} disp.</span>
+              {% else %}
+              <span class="badge bg-danger shadow-sm">Agotado</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="p-3 flex-grow-1 d-flex flex-column">
+            <div class="mb-2">
+              <div class="text-accent small fw-bold text-uppercase tracking-widest mb-1" style="font-size: 0.74rem;">{{ prod.categoria_rel.nombre if prod.categoria_rel else 'General' }}</div>
+              <h6 class="fw-bold text-dark lh-sm m-0" style="font-family: 'Outfit', sans-serif;">{{ prod.nombre }}</h6>
+            </div>
+            <div class="mt-auto">
+              <span class="text-primary fw-bolder fs-5">${{ "{:,.0f}".format(prod.precio) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Derecha: Resumen de Compra -->
+  <div class="col-lg-4 col-md-5 h-100">
+    <div class="glass-panel h-100 d-flex flex-column border-0 shadow-xl overflow-hidden animate-slide-in">
+      
+      <!-- Encabezado Cliente -->
+      <div class="p-4 bg-dark text-white shadow-sm">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <p class="text-accent small text-uppercase tracking-widest mb-1 fw-bold" style="font-size: 0.65rem;">Orden Actual</p>
+              <h5 class="fw-bold m-0">
+                {% if venta and venta.cliente %}
+                  {{ venta.cliente.nombre }}
+                {% else %}
+                  Consumidor Final
+                {% endif %}
+              </h5>
+              {% if venta and venta.cliente %}
+              <div class="small mt-2 opacity-90">
+                <span class="me-2"><i class="bi bi-wallet2 me-1"></i>Cartera: <b>${{ "{:,.0f}".format(cliente_deuda or 0) }}</b></span>
+                {% if cliente_credito_activo %}
+                <span><i class="bi bi-receipt me-1"></i>{{ cliente_credito_activo.codigo }} · Saldo: <b>${{ "{:,.0f}".format(cliente_credito_activo.saldo_actual or 0) }}</b></span>
+                {% endif %}
+              </div>
+              {% endif %}
+            </div>
+            <button class="btn btn-outline-accent rounded-circle p-2" data-bs-toggle="modal" data-bs-target="#modalCliente">
+              <i class="bi bi-person-plus fs-5"></i>
+            </button>
+        </div>
+      </div>
+
+      <!-- Área de Ítems -->
+      <div class="flex-grow-1 overflow-auto bg-white p-3 custom-scrollbar">
+        {% if not items_agrupados %}
+        <div class="h-100 d-flex flex-column align-items-center justify-content-center text-muted opacity-25">
+          <i class="bi bi-bag-plus display-1 mb-3"></i>
+          <h6 class="fw-bold">Esperando selección...</h6>
+        </div>
+        {% else %}
+        <div class="d-flex flex-column gap-3">
+          {% for g in items_agrupados %}
+          <div class="card border-0 bg-light p-3 rounded-4 position-relative">
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="pe-4">
+                <div class="fw-bold text-dark fs-6">{{ g.cantidad }}x {{ g.nombre }}</div>
+                <div class="text-primary fs-5 fw-bold">${{ "{:,.0f}".format(g.precio * g.cantidad) }}</div>
+                {% if g.notas %}
+                <div class="text-muted small mt-1"><i class="bi bi-info-circle me-1"></i>{{ g.notas }}</div>
+                {% endif %}
+              </div>
+              <form action="{{ url_for('eliminar_item', item_id=g.ids[-1]) }}" method="POST" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+                <button type="submit" class="btn btn-outline-danger btn-sm border-0 rounded-circle">
+                  <i class="bi bi-dash-circle-fill fs-5"></i>
+                </button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Totales y Pago -->
+      <div class="p-4 bg-white border-top">
+        {% set total = total_display if total_display is defined else (venta.total if venta else 0) %}
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="text-muted fw-bold small text-uppercase tracking-widest">Total a Pagar</div>
+            <div class="fs-1 fw-bolder text-primary">${{ "{:,.0f}".format(total) }}</div>
+        </div>
+
+        <div class="d-grid gap-3">
+          <button class="btn btn-primary btn-lg shadow-accent py-3 fw-bold rounded-pill" 
+                  {% if not items_agrupados %}disabled{% endif %} 
+                  data-bs-toggle="modal" data-bs-target="#modalPago">
+            <i class="bi bi-credit-card-2-back me-2"></i> CONTINUAR AL PAGO
+          </button>
+          
+          <div class="card border-0 bg-light rounded-4 p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div class="fw-bold text-dark small text-uppercase tracking-widest">Cotizacion en Cuotas</div>
+              <span class="badge text-bg-light border text-muted">Sin venta</span>
+            </div>
+            <form id="formCotizacionCuotas" action="{{ url_for('cerrar_cuenta') }}" method="POST" class="d-grid gap-2">
+              <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+              <input type="hidden" name="venta_id" value="{{ venta.id if venta else '' }}">
+              <input type="hidden" name="metodo_pago" value="Cotizacion">
+              <input type="hidden" name="cotizacion_plan" value="1">
+              <input type="hidden" name="resumen_cotizacion" id="cotizacionResumenInput" value="">
+
+              <label class="form-label text-muted small fw-bold text-uppercase mb-0">Cuota Inicial ($)</label>
+              <input type="number" name="cuota_inicial" id="cotizacionCuotaInicialInput" class="form-control text-center fw-bold"
+                     min="0" value="0" oninput="calcularCotizacionRapida()">
+
+              <div class="row g-2">
+                <div class="col-6">
+                  <label class="form-label text-muted small fw-bold text-uppercase mb-0">Frecuencia</label>
+                  <select name="periodicidad_credito" id="cotizacionPeriodicidadInput" class="form-select" onchange="calcularCotizacionRapida()">
+                    <option value="Semanal">Semanal</option>
+                    <option value="Quincenal">Quincenal</option>
+                    <option value="Mensual" selected>Mensual</option>
+                  </select>
+                </div>
+                <div class="col-6">
+                  <label class="form-label text-muted small fw-bold text-uppercase mb-0">N° Cuotas</label>
+                  <input type="number" name="numero_cuotas" id="cotizacionNumeroCuotasInput" class="form-control text-center fw-bold"
+                         min="1" max="120" value="12" oninput="calcularCotizacionRapida()">
+                </div>
+              </div>
+
+              <label class="form-label text-muted small fw-bold text-uppercase mb-0">Fecha de Inicio</label>
+              <input type="date" name="fecha_inicio_credito" id="cotizacionFechaInicioInput" class="form-control" onchange="calcularCotizacionRapida()">
+
+              <div class="p-3 rounded-4 border bg-white mt-1">
+                <div class="row g-2 text-center">
+                  <div class="col-6">
+                    <div class="text-muted small">Saldo a Financiar</div>
+                    <div class="fw-bold text-dark" id="cq_saldo">$0</div>
+                  </div>
+                  <div class="col-6 d-none">
+                    <div class="text-muted small">Interes (<span id="cq_pct">0</span>%)</div>
+                    <div class="fw-bold text-warning" id="cq_interes">$0</div>
+                  </div>
+                  <div class="col-6">
+                    <div class="text-muted small">Total Financiado</div>
+                    <div class="fw-bold text-primary" id="cq_total">$0</div>
+                  </div>
+                  <div class="col-6">
+                    <div class="text-muted small">Valor c/Cuota</div>
+                    <div class="fw-bolder fs-5 text-success" id="cq_cuota">$0</div>
+                  </div>
+                </div>
+              </div>
+
+              <textarea name="notas_venta" class="form-control form-control-sm bg-white" rows="2" placeholder="Nota opcional para la cotizacion"></textarea>
+              <button type="submit" class="btn btn-outline-primary fw-bold rounded-pill py-2"
+                      {% if not items_agrupados %}disabled{% endif %}>
+                <i class="bi bi-file-earmark-text me-2"></i>GENERAR COTIZACION
+              </button>
+            </form>
+          </div>
+
+          {% if venta %}
+          <form action="{{ url_for('cancelar_venta', venta_id=venta.id) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar esta orden?')">
+            <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+            <button type="submit" class="btn btn-link text-danger btn-sm text-decoration-none fw-bold p-0">
+              <i class="bi bi-trash3 me-1"></i> Cancelar Pedido
+            </button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================== -->
+<!-- Modal Agregar Producto             -->
+<!-- ================================== -->
+<div class="modal fade" id="modalProducto" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg overflow-hidden">
+      <form id="formAgregarItem" action="{{ url_for('punto_venta') }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+        <input type="hidden" name="producto_id" id="mod_prod_id">
+        
+        <div class="modal-header border-bottom-0 pt-4 px-4 bg-white">
+          <h4 class="modal-title fw-bold text-dark" id="mod_prod_title">Añadir al Pedido</h4>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        
+        <div class="modal-body px-5 pb-5">
+          <div class="text-center mb-5">
+              <h1 class="text-primary fw-bolder mb-2" id="mod_prod_precio"></h1>
+              <div id="mod_prod_stock_info" class="p-3 rounded-4 bg-light border">
+                  Cargando stock...
+              </div>
+          </div>
+          
+          <div class="mb-4">
+            <label class="form-label d-block text-center fw-bold text-muted small text-uppercase tracking-widest mb-3">Cantidad</label>
+            <div class="d-flex justify-content-center align-items-center gap-4">
+                <button type="button" class="btn btn-glass rounded-circle p-1" onclick="updateQty(-1)" style="width: 50px; height: 50px;">
+                    <i class="bi bi-dash fs-3"></i>
+                </button>
+                <input type="number" id="mod_qty" name="cantidad" class="form-control text-center fs-1 fw-bolder p-0 border-0" value="1" min="1" style="width: 100px; background: transparent;">
+                <button type="button" class="btn btn-glass rounded-circle p-1" onclick="updateQty(1)" style="width: 50px; height: 50px;">
+                    <i class="bi bi-plus fs-3"></i>
+                </button>
+            </div>
+          </div>
+          
+          <div class="mb-2">
+            <label class="form-label fw-bold text-muted small text-uppercase tracking-widest mb-2">Notas</label>
+            <textarea class="form-control bg-light border-0 p-3" name="notas" rows="2" placeholder="Ej: Color nogal, entrega piso 4..."></textarea>
+          </div>
+        </div>
+        
+        <div class="modal-footer bg-light-subtle border-0 p-4">
+          <button type="submit" id="btnAgregarConfirm" class="btn btn-primary w-100 py-3 fw-bold shadow-accent rounded-pill">
+            <i class="bi bi-cart-plus me-2"></i>AÑADIR A LA CANASTA
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ================================== -->
+<!-- Modal Asignar Cliente              -->
+<!-- ================================== -->
+<div class="modal fade" id="modalCliente" tabindex="-1">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg p-3">
+        <form action="{{ url_for('actualizar_info_venta') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+            <input type="hidden" name="venta_id" value="{{ venta.id if venta else '' }}">
+            <h6 class="fw-bold mb-3">Asignar o Crear Cliente</h6>
+            <div class="mb-3">
+                <label class="form-label small fw-bold text-uppercase text-muted">Cliente existente</label>
+                <select class="form-select" name="cliente_id" id="clienteSelectVenta" onchange="syncClienteSeleccionado()">
+                    <option value="">-- Seleccionar --</option>
+                    {% for c in clientes %}
+                    <option value="{{ c.id }}"
+                            data-nombre="{{ c.nombre or '' }}"
+                            data-apellido="{{ c.apellido or '' }}"
+                            data-telefono="{{ c.telefono or '' }}"
+                            data-direccion="{{ c.direccion or '' }}"
+                            data-documento="{{ c.documento or '' }}"
+                            data-email="{{ c.email or '' }}"
+                            data-notas="{{ c.notas or '' }}"
+                            {% if venta and venta.cliente_id == c.id %}selected{% endif %}>
+                        {{ c.nombre }}{% if c.telefono %} · {{ c.telefono }}{% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <input type="number" class="form-control" name="telefono" placeholder="Teléfono">
+            </div>
+            <div class="mb-3">
+                <input type="text" class="form-control" name="nombre" placeholder="Nombre completo">
+            </div>
+            <div class="mb-3">
+                <input type="text" class="form-control" name="apellido" placeholder="Apellido">
+            </div>
+            <div class="mb-3">
+                <input type="text" class="form-control" name="documento" placeholder="CC o NIT">
+            </div>
+            <div class="mb-3">
+                <input type="email" class="form-control" name="email" placeholder="Correo electronico">
+            </div>
+            <div class="mb-3">
+                <input type="text" class="form-control" name="direccion" placeholder="Dirección despacho">
+            </div>
+            <div class="mb-3">
+                <textarea class="form-control" name="notas" rows="2" placeholder="Notas del cliente"></textarea>
+            </div>
+            <p class="small text-muted mb-3">
+                Si seleccionas un cliente existente, se asigna a la venta. Si no, se crea/busca por teléfono.
+            </p>
+            <button type="submit" class="btn btn-primary w-100">CONFIRMAR</button>
+        </form>
+    </div>
+  </div>
+</div>
+
+<!-- ================================== -->
+<!-- Modal Pago                         -->
+<!-- ================================== -->
+<div class="modal fade" id="modalPago" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-lg overflow-hidden rounded-5">
+      <div class="modal-header bg-dark text-white p-4">
+        <div>
+          <h5 class="modal-title fw-bold mb-0">Confirmar Transacción</h5>
+          <div class="small opacity-75">build: credito-cliente-v4</div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="{{ url_for('cerrar_cuenta') }}" method="POST" id="formCerrarVenta">
+        <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+        <input type="hidden" name="venta_id" value="{{ venta.id if venta else '' }}">
+        <div class="modal-body p-4 custom-scrollbar">
+            <div class="text-center mb-4">
+                <p class="text-muted small text-uppercase tracking-widest mb-1">Monto de Venta</p>
+                {% set total = total_display if total_display is defined else (venta.total if venta else 0) %}
+                <div class="fs-1 fw-bold text-dark">${{ "{:,.0f}".format(total) }}</div>
+            </div>
+            <div class="mb-4">
+                <label class="form-label text-muted small fw-bold text-uppercase">Forma de Pago</label>
+                <select id="metodoPagoSelect" name="metodo_pago_ui" class="form-select border-2 border-primary-subtle fw-bold" onchange="togglePaymentFields()">
+                    <option value="Efectivo" selected>Efectivo</option>
+                    <option value="Transferencia">Transferencia</option>
+                    <option value="Tarjeta">Tarjeta</option>
+                    <option value="Mixto">Mixto</option>
+                    <option value="Cotizacion" class="text-muted">Solo Cotización</option>
+                </select>
+                <input type="hidden" id="metodoPagoHidden" name="metodo_pago" value="Efectivo">
+                <input type="hidden" id="modoCreditoActivoInput" name="modo_credito_activo" value="0">
+            </div>
+            <div class="mb-3" id="singlePaymentBlock">
+                <label class="form-label text-muted small fw-bold text-uppercase">Monto Recibido</label>
+                <div class="d-flex gap-2 mb-2">
+                    <button type="button" id="btnTipoPrecioContado" class="btn btn-outline-success btn-sm flex-fill fw-bold rounded-pill border-2" onclick="setTipoPrecio('contado')">Contado</button>
+                    <button type="button" id="btnTipoPrecioCredito" class="btn btn-outline-warning btn-sm flex-fill fw-bold rounded-pill border-2" onclick="activarModoCredito()">Crédito</button>
+                </div>
+                <input type="number" id="montoRecibidoInput" name="monto_recibido" class="form-control form-control-lg text-center fw-bold bg-light border-0" value="{{ total }}">
+                <div class="mt-2 d-none" id="precioContadoBlock">
+                    <label class="form-label text-muted small fw-bold text-uppercase">Precio Final Contado ($)</label>
+                    <input type="number"
+                           id="precioContadoInput"
+                           name="total_contado_manual"
+                           class="form-control text-center fw-bold"
+                           min="1"
+                           step="1"
+                           value="{{ total }}"
+                           placeholder="Define total final con descuento">
+                    <div class="small text-muted mt-1">Solo ajusta esta venta. No cambia el precio del inventario.</div>
+                </div>
+            </div>
+            <div class="mb-3 d-none" id="mixedPaymentBlock">
+                <label class="form-label text-muted small fw-bold text-uppercase">Pago Mixto</label>
+                <div class="row g-2">
+                    <div class="col-4">
+                        <input type="number" name="pago_efectivo" id="pagoEfectivoInput" class="form-control text-center" min="0" value="0" placeholder="Efectivo">
+                    </div>
+                    <div class="col-4">
+                        <input type="number" name="pago_tarjeta" id="pagoTarjetaInput" class="form-control text-center" min="0" value="0" placeholder="Tarjeta">
+                    </div>
+                    <div class="col-4">
+                        <input type="number" name="pago_transferencia" id="pagoTransferenciaInput" class="form-control text-center" min="0" value="0" placeholder="Transfer.">
+                    </div>
+                </div>
+            </div>
+            <!-- DATOS DEL CRÉDITO -->
+            <div class="d-none" id="creditoPlanBlock">
+              <hr class="my-3">
+              <h6 class="fw-bold text-dark mb-3" id="creditoHeaderTitle"><i class="bi bi-calculator me-2 text-primary"></i>Datos del Crédito</h6>
+              <div id="clienteDatosBlock">
+              <!-- Cliente -->
+              <div class="mb-3">
+                <label class="form-label text-muted small fw-bold text-uppercase">Cliente (obligatorio)</label>
+                <select class="form-select" name="credito_cliente_id" id="creditoClienteSelect" onchange="syncCreditoClienteSeleccionado()">
+                  <option value="">-- Seleccionar cliente --</option>
+                  {% for c in clientes %}
+                  <option value="{{ c.id }}" data-nombre="{{ c.nombre or '' }}" data-apellido="{{ c.apellido or '' }}" data-telefono="{{ c.telefono or '' }}" data-direccion="{{ c.direccion or '' }}" data-documento="{{ c.documento or '' }}" data-email="{{ c.email or '' }}" data-notas="{{ c.notas or '' }}"
+                    {% if venta and venta.cliente_id == c.id %}selected{% endif %}>
+                    {{ c.nombre }}{% if c.telefono %} · {{ c.telefono }}{% endif %}
+                  </option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="row g-2 mb-3">
+                <div class="col-6"><input type="number" class="form-control form-control-sm" name="credito_cliente_telefono" placeholder="Teléfono"></div>
+                <div class="col-6"><input type="text" class="form-control form-control-sm" name="credito_cliente_nombre" placeholder="Nombre"></div>
+                <div class="col-6"><input type="text" class="form-control form-control-sm" name="credito_cliente_apellido" placeholder="Apellido"></div>
+                <div class="col-6"><input type="text" class="form-control form-control-sm" name="credito_cliente_documento" placeholder="CC o NIT"></div>
+                <div class="col-12"><input type="text" class="form-control form-control-sm" name="credito_cliente_direccion" placeholder="Dirección"></div>
+                <div class="col-12"><input type="email" class="form-control form-control-sm" name="credito_cliente_email" placeholder="Correo electronico"></div>
+                <div class="col-12"><textarea class="form-control form-control-sm" name="credito_cliente_notas" rows="2" placeholder="Notas del cliente"></textarea></div>
+              </div>
+              </div>
+              <div id="referenciasCreditoBlock">
+              <div class="border rounded-4 p-3 bg-light mb-3">
+                <div class="small fw-bold text-muted text-uppercase mb-2">Referencias Personales</div>
+                <div class="small text-muted mb-2">Referencia 1</div>
+                <div class="row g-2 mb-2">
+                  <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref1_nombre" placeholder="Nombre"></div>
+                  <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref1_parentesco" placeholder="Parentesco"></div>
+                  <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref1_celular" placeholder="Celular"></div>
+                  <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref1_direccion" placeholder="Dirección"></div>
+                </div>
+                <div class="small text-muted mb-2">Referencia 2</div>
+                <div class="row g-2">
+                  <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref2_nombre" placeholder="Nombre"></div>
+                  <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref2_parentesco" placeholder="Parentesco"></div>
+                  <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref2_celular" placeholder="Celular"></div>
+                  <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref2_direccion" placeholder="Dirección"></div>
+                </div>
+              </div>
+              </div>
+              <div id="condicionesCreditoBlock">
+              <!-- Cuota inicial -->
+              <div class="mb-3">
+                <label class="form-label text-muted small fw-bold text-uppercase">Cuota Inicial ($)</label>
+                <input type="number" name="cuota_inicial" id="cuotaInicialInput" class="form-control text-center fw-bold"
+                  min="0" value="0" oninput="calcularCredito()">
+              </div>
+              <!-- Periodicidad y cuotas -->
+              <div class="row g-2 mb-3">
+                <div class="col-6">
+                  <label class="form-label text-muted small fw-bold text-uppercase">Frecuencia</label>
+                  <select name="periodicidad_credito" id="periodicidadCreditoInput" class="form-select" onchange="actualizarOpcionesDiaPagoCredito();calcularCredito()">
+                    <option value="Semanal">Semanal</option>
+                    <option value="Quincenal">Quincenal</option>
+                    <option value="Mensual" selected>Mensual</option>
+                  </select>
+                </div>
+                <div class="col-6">
+                  <label class="form-label text-muted small fw-bold text-uppercase">N° Cuotas</label>
+                  <input type="number" name="numero_cuotas" id="numeroCuotasInput" class="form-control text-center fw-bold"
+                    min="1" max="120" value="12" oninput="calcularCredito()">
+                </div>
+              </div>
+              <div class="mb-3 d-none" id="diaPagoCreditoWrap">
+                <label class="form-label text-muted small fw-bold text-uppercase">Día de Pago</label>
+                <select name="dia_pago_credito" id="diaPagoCreditoInput" class="form-select" onchange="calcularCredito()"></select>
+              </div>
+              <!-- Fecha inicio -->
+              <div class="mb-3">
+                <label class="form-label text-muted small fw-bold text-uppercase">Fecha de Inicio</label>
+                <input type="date" name="fecha_inicio_credito" id="fechaInicioCredito" class="form-control" onchange="calcularCredito()">
+              </div>
+              <!-- Resumen calculado -->
+              <div id="resumenCredito" class="d-none">
+                <div class="p-3 rounded-4 border bg-light mb-3">
+                  <div class="row g-2 text-center">
+                    <div class="col-6">
+                      <div class="text-muted small">Saldo a Financiar</div>
+                      <div class="fw-bold text-dark" id="rc_saldo"></div>
+                    </div>
+                    <div class="col-6 d-none">
+                      <div class="text-muted small">Interés (<span id="rc_pct"></span>%)</div>
+                      <div class="fw-bold text-warning" id="rc_interes"></div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-muted small">Total Financiado</div>
+                      <div class="fw-bold text-primary" id="rc_total"></div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-muted small">Valor c/Cuota</div>
+                      <div class="fw-bolder fs-5 text-success" id="rc_cuota"></div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Plan de pagos preview -->
+                <div class="small fw-bold text-muted text-uppercase mb-1">Plan de Pagos</div>
+                <div class="table-responsive" style="max-height:160px;overflow-y:auto;">
+                  <table class="table table-sm table-bordered mb-0 small">
+                    <thead class="table-dark"><tr><th>N°</th><th>Fecha</th><th>Valor</th></tr></thead>
+                    <tbody id="tablaPlanPagos"></tbody>
+                  </table>
+                </div>
+              </div>
+              <!-- Observaciones -->
+              <div class="mt-3">
+                <label class="form-label text-muted small fw-bold text-uppercase">Observaciones del crédito</label>
+                <textarea name="observaciones_credito" class="form-control form-control-sm" rows="2" placeholder="Opcional..."></textarea>
+              </div>
+              </div>
+            </div>
+            <div class="mb-3" id="creditoClienteBlock" style="display:none!important"></div>
+            <div class="mb-3">
+                <label class="form-label text-muted small fw-bold text-uppercase">Dirección de Envío</label>
+                <input type="text" name="direccion_envio" class="form-control bg-light border-0" value="{{ venta.direccion_envio or '' if venta else '' }}" placeholder="Dirección de entrega">
+            </div>
+            <div class="mb-2">
+                <label class="form-label text-muted small fw-bold text-uppercase">Notas de Venta</label>
+                <textarea name="notas_venta" class="form-control bg-light border-0" rows="2" placeholder="Observaciones">{{ venta.notas or '' if venta else '' }}</textarea>
+            </div>
+        </div>
+        <div class="modal-footer p-4 border-0">
+          <button type="submit" class="btn btn-primary btn-lg w-100 py-3 fw-bold">REGISTRAR VENTA</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    var currentStockLocal = 0;
+    var mProd = new bootstrap.Modal(document.getElementById('modalProducto'));
+    var tasasInteres = {Semanal:0.0, Quincenal:0.0, Mensual:0.0, aplicar:false};
+    var opcionesDiaPagoFallback = {
+        Semanal: [
+            {value:'1', label:'Lunes'},
+            {value:'2', label:'Martes'},
+            {value:'3', label:'Miercoles'},
+            {value:'4', label:'Jueves'},
+            {value:'5', label:'Viernes'},
+            {value:'6', label:'Sabado'},
+            {value:'0', label:'Domingo'}
+        ],
+        Quincenal: [
+            {value:'16', label:'Dia 16'},
+            {value:'17', label:'Dia 17'},
+            {value:'18', label:'Dia 18'},
+            {value:'19', label:'Dia 19'},
+            {value:'20', label:'Dia 20'},
+            {value:'1', label:'Dia 1'},
+            {value:'2', label:'Dia 2'},
+            {value:'3', label:'Dia 3'},
+            {value:'4', label:'Dia 4'},
+            {value:'5', label:'Dia 5'}
+        ],
+        Mensual: [
+            {value:'1', label:'Dia 1'},
+            {value:'2', label:'Dia 2'},
+            {value:'3', label:'Dia 3'},
+            {value:'4', label:'Dia 4'},
+            {value:'5', label:'Dia 5'},
+            {value:'6', label:'Dia 6'},
+            {value:'7', label:'Dia 7'},
+            {value:'8', label:'Dia 8'},
+            {value:'9', label:'Dia 9'},
+            {value:'10', label:'Dia 10'}
+        ]
+    };
+    var opcionesDiaPago = JSON.parse(JSON.stringify(opcionesDiaPagoFallback));
+    var modoCreditoActivo = false;
+    var totalVentaBase = {{ total_display if total_display is defined else (venta.total if venta else 0) }};
+
+    function metodoPermitePrecioContado(metodo){
+        return ['Efectivo', 'Tarjeta', 'Transferencia'].includes(metodo);
+    }
+
+    function getPrecioContadoActual(){
+        const input = document.getElementById('precioContadoInput');
+        if(!input) return totalVentaBase;
+        const valor = parseInt(input.value || '0', 10);
+        return (!Number.isNaN(valor) && valor > 0) ? valor : totalVentaBase;
+    }
+
+    function sincronizarPrecioContadoConMonto(){
+        if(modoCreditoActivo) return;
+        const metodo = document.getElementById('metodoPagoSelect')?.value || 'Efectivo';
+        if(!metodoPermitePrecioContado(metodo)) return;
+        const montoInput = document.getElementById('montoRecibidoInput');
+        if(!montoInput || montoInput.readOnly) return;
+        montoInput.value = getPrecioContadoActual();
+    }
+
+    // Cargar tasas de interes al iniciar
+    fetch('/api/intereses_credito').then(r=>r.json()).then(d=>{
+        tasasInteres = d || tasasInteres;
+        const remotas = (d && d.dias_pago) ? d.dias_pago : {};
+        opcionesDiaPago = {
+            Semanal: (remotas.Semanal && remotas.Semanal.length) ? remotas.Semanal : opcionesDiaPagoFallback.Semanal,
+            Quincenal: (remotas.Quincenal && remotas.Quincenal.length) ? remotas.Quincenal : opcionesDiaPagoFallback.Quincenal,
+            Mensual: (remotas.Mensual && remotas.Mensual.length) ? remotas.Mensual : opcionesDiaPagoFallback.Mensual,
+        };
+        actualizarOpcionesDiaPagoCredito();
+        calcularCredito();
+        calcularCotizacionRapida();
+    }).catch(()=>{
+        opcionesDiaPago = JSON.parse(JSON.stringify(opcionesDiaPagoFallback));
+        actualizarOpcionesDiaPagoCredito();
+        calcularCredito();
+        calcularCotizacionRapida();
+    });
+
+    // Las alertas de cartera se muestran globalmente desde base.html
+
+    // Fecha de hoy por defecto
+    document.addEventListener('DOMContentLoaded', function(){
+        var fd = document.getElementById('fechaInicioCredito');
+        if(fd) fd.value = new Date().toISOString().slice(0,10);
+        var fdCot = document.getElementById('cotizacionFechaInicioInput');
+        if(fdCot) fdCot.value = new Date().toISOString().slice(0,10);
+        syncClienteSeleccionado();
+        syncCreditoClienteSeleccionado();
+        actualizarOpcionesDiaPagoCredito();
+        togglePaymentFields();
+        calcularCotizacionRapida();
+        filtrarProductosPorBusquedaNavbar();
+        attachValidacionCierreVenta();
+        const modalPagoEl = document.getElementById('modalPago');
+        if(modalPagoEl){
+            modalPagoEl.addEventListener('show.bs.modal', function(){
+                const metodoSelect = document.getElementById('metodoPagoSelect');
+                if(metodoSelect) metodoSelect.value = 'Efectivo';
+                modoCreditoActivo = false;
+                togglePaymentFields();
+            });
+        }
+
+        const formCot = document.getElementById('formCotizacionCuotas');
+        if(formCot){
+            formCot.addEventListener('submit', function(){
+                const total = {{ total_display if total_display is defined else (venta.total if venta else 0) }};
+                const ci = parseFloat(document.getElementById('cotizacionCuotaInicialInput')?.value||0)||0;
+                const nCuotas = parseInt(document.getElementById('cotizacionNumeroCuotasInput')?.value||1)||1;
+                const period = document.getElementById('cotizacionPeriodicidadInput')?.value||'Mensual';
+                const fechaInicio = document.getElementById('cotizacionFechaInicioInput')?.value||'';
+                const saldo = Math.max(total - ci, 0);
+                const interes = 0;
+                const totalFin = saldo + interes;
+                const cuota = nCuotas > 0 ? Math.ceil(totalFin / nCuotas) : totalFin;
+                const resumen = [
+                    'Cotizacion en cuotas:',
+                    `Cuota inicial: $${Math.round(ci).toLocaleString('es-CO')}`,
+                    `Frecuencia: ${period}`,
+                    `Numero cuotas: ${nCuotas}`,
+                    `Fecha inicio: ${fechaInicio || 'No definida'}`,
+                    `Saldo a financiar: $${Math.round(saldo).toLocaleString('es-CO')}`,
+                    `Total financiado: $${Math.round(totalFin).toLocaleString('es-CO')}`,
+                    `Valor por cuota: $${Math.round(cuota).toLocaleString('es-CO')}`
+                ].join('\n');
+                const resumenInput = document.getElementById('cotizacionResumenInput');
+                if(resumenInput) resumenInput.value = resumen;
+            });
+        }
+
+        const precioContadoInput = document.getElementById('precioContadoInput');
+        if(precioContadoInput){
+            precioContadoInput.addEventListener('input', sincronizarPrecioContadoConMonto);
+        }
+    });
+
+    function attachValidacionCierreVenta(){
+        const form = document.getElementById('formCerrarVenta');
+        if(!form) return;
+        form.addEventListener('submit', function(e){
+            const metodoSelect = document.getElementById('metodoPagoSelect');
+            const metodoHidden = document.getElementById('metodoPagoHidden');
+            if(metodoHidden && metodoSelect && !modoCreditoActivo){
+                metodoHidden.value = metodoSelect.value;
+            }
+            const metodo = metodoHidden?.value || metodoSelect?.value || '';
+            if(metodo !== 'Credito') return;
+
+            const clienteId = form.querySelector('select[name="credito_cliente_id"]')?.value || '';
+            const tel = (form.querySelector('input[name="credito_cliente_telefono"]')?.value || '').trim();
+            const nom = (form.querySelector('input[name="credito_cliente_nombre"]')?.value || '').trim();
+            const ape = (form.querySelector('input[name="credito_cliente_apellido"]')?.value || '').trim();
+            const doc = (form.querySelector('input[name="credito_cliente_documento"]')?.value || '').trim();
+            const dir = (form.querySelector('input[name="credito_cliente_direccion"]')?.value || '').trim();
+            const telNorm = tel.replace(/\D/g, '');
+
+            if(!clienteId && (!nom || !ape || !dir || (!doc && telNorm.length < 7))){
+                e.preventDefault();
+                showToast('En credito debes ingresar nombre, apellido, direccion y telefono valido o CC/NIT.', 'warning');
+                return false;
+            }
+            return true;
+        });
+    }
+
+    function abrirModal(el) {
+        var id = el.getAttribute('data-prod-id');
+        var nombre = el.getAttribute('data-prod-nombre');
+        var precio = el.getAttribute('data-prod-precio');
+        var stock = parseInt(el.getAttribute('data-prod-stock'));
+        document.getElementById('mod_prod_id').value = id;
+        document.getElementById('mod_prod_title').innerText = nombre;
+        document.getElementById('mod_prod_precio').innerText = '$' + Number(precio).toLocaleString();
+        document.getElementById('mod_qty').value = 1;
+        currentStockLocal = stock;
+        var stockInfo = document.getElementById('mod_prod_stock_info');
+        if(currentStockLocal > 0){
+            stockInfo.innerHTML = '<span class="text-success fw-bold fs-5"><i class="bi bi-check-circle me-1"></i>'+currentStockLocal+' pzas. disponibles en {{ sede.nombre }}</span>';
+        } else {
+            stockInfo.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-x-circle me-1"></i> SIN EXISTENCIAS en {{ sede.nombre }}</span>';
+        }
+        checkStockLimit();
+        mProd.show();
+    }
+
+    function updateQty(delta) {
+        var input = document.getElementById('mod_qty');
+        var val = parseInt(input.value) + delta;
+        if(val < 1) val = 1;
+        input.value = val;
+        checkStockLimit();
+    }
+
+    function checkStockLimit() {
+        var qty = parseInt(document.getElementById('mod_qty').value);
+        var btn = document.getElementById('btnAgregarConfirm');
+        if(currentStockLocal <= 0){
+            btn.disabled=true; btn.className='btn btn-danger w-100 py-3 fw-bold rounded-pill';
+            btn.innerHTML='<i class="bi bi-x-circle me-2"></i>FUERA DE STOCK';
+        } else if(qty > currentStockLocal){
+            btn.disabled=false; btn.className='btn btn-warning w-100 py-3 fw-bold rounded-pill';
+            btn.innerHTML='<i class="bi bi-exclamation-triangle me-2"></i>EXCEDE STOCK ('+currentStockLocal+' disp.)';
+        } else {
+            btn.disabled=false; btn.className='btn btn-primary w-100 py-3 fw-bold shadow-accent rounded-pill';
+            btn.innerHTML='<i class="bi bi-cart-plus me-2"></i>AÑADIR A LA CANASTA';
+        }
+    }
+
+    function actualizarOpcionesDiaPagoCredito() {
+        const period = document.getElementById('periodicidadCreditoInput')?.value || 'Mensual';
+        const wrap = document.getElementById('diaPagoCreditoWrap');
+        const select = document.getElementById('diaPagoCreditoInput');
+        if(!wrap || !select) return;
+
+        const previo = select.value || '';
+        let opciones = (opcionesDiaPago && opcionesDiaPago[period]) ? opcionesDiaPago[period] : [];
+        if(!opciones || !opciones.length){
+            opciones = (opcionesDiaPagoFallback && opcionesDiaPagoFallback[period]) ? opcionesDiaPagoFallback[period] : [];
+        }
+        select.innerHTML = opciones.map(op => `<option value="${op.value}">${op.label}</option>`).join('');
+        if(opciones.some(op => op.value === previo)) select.value = previo;
+        if(!select.value && opciones.length) select.value = String(opciones[0].value);
+        wrap.classList.remove('d-none');
+    }
+
+    function actualizarBloquesCliente(requeridoCliente, esCredito){
+        const creditoBlock = document.getElementById('creditoPlanBlock');
+        const clienteDatosBlock = document.getElementById('clienteDatosBlock');
+        const referenciasBlock = document.getElementById('referenciasCreditoBlock');
+        const condicionesBlock = document.getElementById('condicionesCreditoBlock');
+        const titulo = document.getElementById('creditoHeaderTitle');
+        const form = document.getElementById('metodoPagoSelect')?.closest('form');
+        if(!creditoBlock || !clienteDatosBlock || !referenciasBlock || !condicionesBlock || !form) return;
+
+        const mostrar = requeridoCliente || esCredito;
+        creditoBlock.classList.toggle('d-none', !mostrar);
+        clienteDatosBlock.classList.toggle('d-none', !mostrar);
+        referenciasBlock.classList.toggle('d-none', !esCredito);
+        condicionesBlock.classList.toggle('d-none', !esCredito);
+        if(titulo) titulo.innerHTML = esCredito
+            ? '<i class="bi bi-calculator me-2 text-primary"></i>Datos del Crédito'
+            : '<i class="bi bi-person-vcard me-2 text-primary"></i>Información del Cliente';
+
+        // La validacion final se hace en backend para permitir cliente existente o nuevo sin bloquear UX.
+    }
+
+    function togglePaymentFields() {
+        const metodo = document.getElementById('metodoPagoSelect').value;
+        const metodoHidden = document.getElementById('metodoPagoHidden');
+        const modoCreditoHidden = document.getElementById('modoCreditoActivoInput');
+        const singleBlock = document.getElementById('singlePaymentBlock');
+        const mixedBlock = document.getElementById('mixedPaymentBlock');
+        const montoRecibido = document.getElementById('montoRecibidoInput');
+        const precioContadoBlock = document.getElementById('precioContadoBlock');
+        modoCreditoActivo = false;
+        if(metodoHidden) metodoHidden.value = metodo;
+        if(modoCreditoHidden) modoCreditoHidden.value = '0';
+        if(precioContadoBlock) precioContadoBlock.classList.toggle('d-none', !metodoPermitePrecioContado(metodo));
+
+        if(metodo === 'Mixto'){
+            mixedBlock.classList.remove('d-none');
+            singleBlock.classList.add('d-none');
+            montoRecibido.value = 0;
+            montoRecibido.readOnly = true;
+            actualizarBloquesCliente(false, false);
+        } else if(metodo === 'Cotizacion'){
+            mixedBlock.classList.add('d-none');
+            singleBlock.classList.remove('d-none');
+            montoRecibido.value = 0;
+            montoRecibido.readOnly = true;
+            actualizarBloquesCliente(false, false);
+        } else {
+            mixedBlock.classList.add('d-none');
+            singleBlock.classList.remove('d-none');
+            setTipoPrecio('contado');
+            actualizarBloquesCliente(false, false);
+        }
+        document.getElementById('pagoEfectivoInput').value=0;
+        document.getElementById('pagoTarjetaInput').value=0;
+        document.getElementById('pagoTransferenciaInput').value=0;
+    }
+
+    function activarModoCredito(){
+        const metodoHidden = document.getElementById('metodoPagoHidden');
+        const modoCreditoHidden = document.getElementById('modoCreditoActivoInput');
+        const singleBlock = document.getElementById('singlePaymentBlock');
+        const mixedBlock = document.getElementById('mixedPaymentBlock');
+        const precioContadoBlock = document.getElementById('precioContadoBlock');
+
+        modoCreditoActivo = true;
+        if(metodoHidden) metodoHidden.value = 'Credito';
+        if(modoCreditoHidden) modoCreditoHidden.value = '1';
+        if(singleBlock) singleBlock.classList.remove('d-none');
+        if(mixedBlock) mixedBlock.classList.add('d-none');
+        if(precioContadoBlock) precioContadoBlock.classList.add('d-none');
+        actualizarBloquesCliente(true, true);
+        actualizarOpcionesDiaPagoCredito();
+        setTipoPrecio('credito');
+        calcularCredito();
+    }
+
+    function setTipoPrecio(tipo){
+        const total = totalVentaBase;
+        const montoInput = document.getElementById('montoRecibidoInput');
+        const btnContado = document.getElementById('btnTipoPrecioContado');
+        const btnCredito = document.getElementById('btnTipoPrecioCredito');
+        const metodoHidden = document.getElementById('metodoPagoHidden');
+        const modoCreditoHidden = document.getElementById('modoCreditoActivoInput');
+        const metodoSelect = document.getElementById('metodoPagoSelect');
+        const precioContadoBlock = document.getElementById('precioContadoBlock');
+        const precioContadoInput = document.getElementById('precioContadoInput');
+        if(!montoInput || !btnContado || !btnCredito) return;
+
+        if(tipo === 'contado'){
+            if(metodoHidden && metodoSelect) metodoHidden.value = metodoSelect.value;
+            if(modoCreditoHidden) modoCreditoHidden.value = '0';
+            if(modoCreditoActivo){
+                modoCreditoActivo = false;
+                actualizarBloquesCliente(false, false);
+            }
+            if(precioContadoBlock) precioContadoBlock.classList.toggle('d-none', !metodoPermitePrecioContado(metodoSelect?.value || 'Efectivo'));
+            if(precioContadoInput){
+                if(!precioContadoInput.value || parseInt(precioContadoInput.value || '0', 10) <= 0){
+                    precioContadoInput.value = total;
+                }
+            }
+            montoInput.value = getPrecioContadoActual();
+            montoInput.readOnly = false;
+            montoInput.focus();
+            btnContado.className = 'btn btn-success btn-sm flex-fill fw-bold rounded-pill border-2';
+            btnCredito.className = 'btn btn-outline-warning btn-sm flex-fill fw-bold rounded-pill border-2';
+            return;
+        }
+
+        if(modoCreditoHidden) modoCreditoHidden.value = '1';
+        if(precioContadoBlock) precioContadoBlock.classList.add('d-none');
+        montoInput.value = total;
+        montoInput.readOnly = true;
+        btnContado.className = 'btn btn-outline-success btn-sm flex-fill fw-bold rounded-pill border-2';
+        btnCredito.className = 'btn btn-warning btn-sm flex-fill fw-bold rounded-pill border-2 text-dark';
+    }
+
+    function calcularCredito() {
+        const total = {{ total_display if total_display is defined else (venta.total if venta else 0) }};
+        const ci = parseFloat(document.getElementById('cuotaInicialInput')?.value||0)||0;
+        const nCuotas = parseInt(document.getElementById('numeroCuotasInput')?.value||1)||1;
+        const period = document.getElementById('periodicidadCreditoInput')?.value||'Mensual';
+        const fechaStr = document.getElementById('fechaInicioCredito')?.value||'';
+        const diaPago = parseInt(document.getElementById('diaPagoCreditoInput')?.value || '0', 10);
+
+        const saldo = Math.max(total - ci, 0);
+        const pct = 0;
+        const interes = 0;
+        const totalFin = saldo + interes;
+        const cuota = nCuotas > 0 ? Math.ceil(totalFin / nCuotas) : totalFin;
+
+        const fmt = n => '$' + Math.round(n).toLocaleString('es-CO');
+
+        const res = document.getElementById('resumenCredito');
+        if(saldo > 0 && nCuotas > 0){
+            res.classList.remove('d-none');
+            document.getElementById('rc_saldo').innerText = fmt(saldo);
+            document.getElementById('rc_pct').innerText = pct;
+            document.getElementById('rc_interes').innerText = fmt(interes);
+            document.getElementById('rc_total').innerText = fmt(totalFin);
+            document.getElementById('rc_cuota').innerText = fmt(cuota);
+            // Plan de pagos
+            var tbody = document.getElementById('tablaPlanPagos');
+            tbody.innerHTML='';
+            var fecha = fechaStr ? new Date(fechaStr+'T12:00:00') : new Date();
+            var crearFechaSegura = function(yy, mm, dd){
+                var ultimo = new Date(yy, mm + 1, 0).getDate();
+                var dia = Math.max(1, Math.min(parseInt(dd || 1, 10), ultimo));
+                return new Date(yy, mm, dia);
+            };
+            for(var i=1;i<=Math.min(nCuotas,24);i++){
+                if(period==='Semanal'){
+                    var wd = isNaN(diaPago) ? 1 : diaPago;
+                    var delta = (wd - fecha.getDay() + 7) % 7;
+                    if(delta <= 0) delta = 7;
+                    fecha.setDate(fecha.getDate() + delta);
+                } else if(period==='Quincenal'){
+                    var qd = isNaN(diaPago) ? 16 : diaPago;
+                    var y = fecha.getFullYear(), m = fecha.getMonth();
+                    var c1 = qd >= 16 ? crearFechaSegura(y, m, qd) : crearFechaSegura(y, m + 1, qd);
+                    if(c1 <= fecha) c1 = crearFechaSegura(c1.getFullYear(), c1.getMonth() + 1, qd);
+                    fecha = c1;
+                } else {
+                    var md = isNaN(diaPago) ? 1 : diaPago;
+                    var y2 = fecha.getFullYear(), m2 = fecha.getMonth();
+                    var c2 = crearFechaSegura(y2, m2, md);
+                    if(c2 <= fecha) c2 = crearFechaSegura(y2, m2 + 1, md);
+                    fecha = c2;
+                }
+                var tr=document.createElement('tr');
+                tr.innerHTML='<td class="text-center">'+i+'</td><td>'+fecha.toLocaleDateString('es-CO')+'</td><td class="text-end fw-bold">'+fmt(cuota)+'</td>';
+                tbody.appendChild(tr);
+            }
+            if(nCuotas>24){
+                var tr2=document.createElement('tr');
+                tr2.innerHTML='<td colspan="3" class="text-center text-muted small">... '+(nCuotas-24)+' cuotas mas</td>';
+                tbody.appendChild(tr2);
+            }
+        } else {
+            res.classList.add('d-none');
+        }
+    }
+
+    function calcularCotizacionRapida() {
+        const total = {{ total_display if total_display is defined else (venta.total if venta else 0) }};
+        const ci = parseFloat(document.getElementById('cotizacionCuotaInicialInput')?.value||0)||0;
+        const nCuotas = parseInt(document.getElementById('cotizacionNumeroCuotasInput')?.value||1)||1;
+        const period = document.getElementById('cotizacionPeriodicidadInput')?.value||'Mensual';
+
+        const saldo = Math.max(total - ci, 0);
+        const pct = 0;
+        const interes = 0;
+        const totalFin = saldo + interes;
+        const cuota = nCuotas > 0 ? Math.ceil(totalFin / nCuotas) : totalFin;
+        const fmt = n => '$' + Math.round(n).toLocaleString('es-CO');
+
+        const elSaldo = document.getElementById('cq_saldo');
+        const elPct = document.getElementById('cq_pct');
+        const elInteres = document.getElementById('cq_interes');
+        const elTotal = document.getElementById('cq_total');
+        const elCuota = document.getElementById('cq_cuota');
+        if(!elSaldo || !elPct || !elInteres || !elTotal || !elCuota) return;
+
+        elSaldo.innerText = fmt(saldo);
+        elPct.innerText = pct;
+        elInteres.innerText = fmt(interes);
+        elTotal.innerText = fmt(totalFin);
+        elCuota.innerText = fmt(cuota);
+    }
+
+    function syncClienteSeleccionado() {
+        const sel = document.getElementById('clienteSelectVenta');
+        if(!sel) return;
+        const opt = sel.options[sel.selectedIndex];
+        const form = sel.closest('form');
+        if(!form||!opt) return;
+        const telefono = form.querySelector('input[name="telefono"]');
+        const nombre = form.querySelector('input[name="nombre"]');
+        const apellido = form.querySelector('input[name="apellido"]');
+        const documento = form.querySelector('input[name="documento"]');
+        const email = form.querySelector('input[name="email"]');
+        const direccion = form.querySelector('input[name="direccion"]');
+        const notas = form.querySelector('textarea[name="notas"]');
+        if(telefono) telefono.value = opt.getAttribute('data-telefono')||'';
+        if(nombre) nombre.value = opt.getAttribute('data-nombre')||'';
+        if(apellido) apellido.value = opt.getAttribute('data-apellido')||'';
+        if(documento) documento.value = opt.getAttribute('data-documento')||'';
+        if(email) email.value = opt.getAttribute('data-email')||'';
+        if(direccion) direccion.value = opt.getAttribute('data-direccion')||'';
+        if(notas) notas.value = opt.getAttribute('data-notas')||'';
+    }
+
+    function syncCreditoClienteSeleccionado() {
+        const sel = document.getElementById('creditoClienteSelect');
+        if(!sel) return;
+        const opt = sel.options[sel.selectedIndex];
+        if(!opt) return;
+        const form = sel.closest('form');
+        if(!form) return;
+        const telefono = form.querySelector('input[name="credito_cliente_telefono"]');
+        const nombre = form.querySelector('input[name="credito_cliente_nombre"]');
+        const apellido = form.querySelector('input[name="credito_cliente_apellido"]');
+        const documento = form.querySelector('input[name="credito_cliente_documento"]');
+        const direccion = form.querySelector('input[name="credito_cliente_direccion"]');
+        const email = form.querySelector('input[name="credito_cliente_email"]');
+        const notas = form.querySelector('textarea[name="credito_cliente_notas"]');
+        if(telefono) telefono.value = opt.getAttribute('data-telefono')||'';
+        if(nombre) nombre.value = opt.getAttribute('data-nombre')||'';
+        if(apellido) apellido.value = opt.getAttribute('data-apellido')||'';
+        if(documento) documento.value = opt.getAttribute('data-documento')||'';
+        if(direccion) direccion.value = opt.getAttribute('data-direccion')||'';
+        if(email) email.value = opt.getAttribute('data-email')||'';
+        if(notas) notas.value = opt.getAttribute('data-notas')||'';
+    }
+
+    function normalizarBusquedaTexto(texto){
+        return (texto || '')
+            .toString()
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim();
+    }
+
+    function filtrarProductosPorBusquedaNavbar(){
+        const params = new URLSearchParams(window.location.search);
+        const q = normalizarBusquedaTexto(params.get('q') || '');
+        if(!q) return;
+
+        const cards = document.querySelectorAll('[data-prod-id]');
+        cards.forEach(card => {
+            const nombre = normalizarBusquedaTexto(card.getAttribute('data-prod-nombre') || '');
+            const categoriaEl = card.querySelector('.text-accent');
+            const categoria = normalizarBusquedaTexto(categoriaEl ? categoriaEl.innerText : '');
+            const texto = `${nombre} ${categoria}`;
+            const visible = texto.includes(q);
+            const col = card.closest('.col-6, .col-md-4, .col-xl-3');
+            if(col) col.style.display = visible ? '' : 'none';
+        });
+    }
+</script>
+{% endblock %}
+
+
+
+

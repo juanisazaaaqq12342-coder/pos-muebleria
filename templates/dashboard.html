@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="animate-slide-in">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h2 class="fw-bold m-0 text-dark" style="font-family: 'Playfair Display', serif;">Resumen Ejecutivo</h2>
+            <p class="text-muted small m-0 text-uppercase tracking-widest">Panel de control de la Boutique</p>
+        </div>
+        <div class="glass-panel px-4 py-2 shadow-sm border-0 d-flex align-items-center gap-2">
+            <i class="bi bi-calendar3 text-accent"></i>
+            <span class="fw-bold text-dark small" id="currentDate"></span>
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="glass-panel p-4 shadow-lg border-0 h-100 text-center transition-all hover-scale">
+                <div class="rounded-circle bg-success bg-opacity-10 text-success p-3 d-inline-block mb-3">
+                    <i class="bi bi-currency-dollar fs-3"></i>
+                </div>
+                <h5 class="text-muted small text-uppercase fw-bold tracking-wider mb-2">Ventas Hoy</h5>
+                <h3 class="fw-bold text-dark m-0">${{ "{:,.0f}".format(total_hoy) }}</h3>
+                <p class="small text-muted mt-2 mb-0">{{ n_ventas }} transacciones</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="glass-panel p-4 shadow-lg border-0 h-100 text-center transition-all hover-scale">
+                <div class="rounded-circle bg-danger bg-opacity-10 text-danger p-3 d-inline-block mb-3">
+                    <i class="bi bi-exclamation-triangle fs-3"></i>
+                </div>
+                <h5 class="text-muted small text-uppercase fw-bold tracking-wider mb-2">Stock Crítico</h5>
+                <h3 class="fw-bold text-dark m-0">{{ stock_critico }}</h3>
+                <p class="small text-muted mt-2 mb-0">Artículos por agotarse</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="glass-panel p-4 shadow-lg border-0 h-100 text-center transition-all hover-scale">
+                <div class="rounded-circle bg-primary bg-opacity-10 text-primary p-3 d-inline-block mb-3">
+                    <i class="bi bi-person-badge fs-3"></i>
+                </div>
+                <h5 class="text-muted small text-uppercase fw-bold tracking-wider mb-2">Cartera Activa</h5>
+                <h3 class="fw-bold text-dark m-0">{{ cartera_pend }}</h3>
+                <p class="small text-muted mt-2 mb-0">Clientes con saldo</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="glass-panel p-4 shadow-lg border-0 h-100 text-center transition-all hover-scale bg-dark">
+                <div class="rounded-circle bg-white bg-opacity-10 text-accent p-3 d-inline-block mb-3">
+                    <img src="{{ url_for('static', filename='img/logo_muebleria.svg') }}" alt="Logo Muebleria La Mejor" style="width:28px;height:28px;">
+                </div>
+                <h5 class="text-accent-subtle small text-uppercase fw-bold tracking-wider mb-2">Estado General</h5>
+                <h3 class="fw-bold text-white m-0">ÓPTIMO</h3>
+                <p class="small text-light text-opacity-50 mt-2 mb-0">Sincronizado</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Ultimas Ventas -->
+        <div class="col-lg-8">
+            <div class="glass-panel p-0 shadow-lg border-0 overflow-hidden">
+                <div class="p-4 border-bottom bg-white bg-opacity-50 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold m-0 text-dark" style="font-family: 'Playfair Display', serif;">
+                        <i class="bi bi-clock-history text-accent me-2"></i>Actividad Reciente
+                    </h5>
+                    <a href="{{ url_for('historial_ventas') }}" class="btn btn-sm btn-outline-dark fw-bold border-accent text-accent rounded-pill px-3">VER TODO</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4 py-3 text-muted small text-uppercase">ID</th>
+                                <th class="py-3 text-muted small text-uppercase">Cliente</th>
+                                <th class="py-3 text-muted small text-uppercase">Método</th>
+                                <th class="py-3 text-end pe-4 text-muted small text-uppercase">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for v in recientes %}
+                            <tr class="border-bottom">
+                                <td class="ps-4 fw-bold text-dark">#{{ v.id }}</td>
+                                <td>
+                                    <div class="fw-bold text-dark">{{ v.cliente.nombre if v.cliente else 'Consumidor Final' }}</div>
+                                    <div class="small text-muted">{{ v.fecha_cierre.strftime('%H:%M %p') }}</div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border px-3 py-2 fw-normal">{{ v.metodo_pago }}</span>
+                                </td>
+                                <td class="text-end pe-4 fw-bold text-dark fs-5">
+                                    ${{ "{:,.0f}".format(v.total) }}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-5 text-muted">No hay ventas registradas el día de hoy.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Accesos Directos -->
+        <div class="col-lg-4">
+            <div class="glass-panel p-4 shadow-lg border-0 h-100">
+                <h5 class="fw-bold mb-4 text-dark" style="font-family: 'Playfair Display', serif;">
+                    <i class="bi bi-lightning-charge text-accent me-2"></i>Acciones Rápidas
+                </h5>
+                <div class="d-grid gap-3">
+                    <a href="{{ url_for('punto_venta') }}" class="btn btn-primary btn-lg shadow-accent py-3 fw-bold tracking-widest text-uppercase">
+                        <i class="bi bi-cart-plus me-2"></i> Nueva Venta
+                    </a>
+                    <a href="{{ url_for('admin') }}" class="btn btn-outline-dark py-3 fw-bold text-uppercase small tracking-widest border-accent text-accent">
+                        <i class="bi bi-box-seam me-2"></i> Gestión Inventario
+                    </a>
+                    <a href="{{ url_for('logistica') }}" class="btn btn-outline-dark py-3 fw-bold text-uppercase small tracking-widest border">
+                        <i class="bi bi-truck me-2"></i> Despachos Logísticos
+                    </a>
+                    <a href="{{ url_for('clientes') }}" class="btn btn-outline-dark py-3 fw-bold text-uppercase small tracking-widest border">
+                        <i class="bi bi-people me-2"></i> Historial de Clientes
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('currentDate').innerText = new Date().toLocaleDateString('es-ES', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+</script>
+{% endblock %}

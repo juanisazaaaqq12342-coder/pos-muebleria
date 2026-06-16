@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="animate-slide-in">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold m-0 text-dark" style="font-family: 'Playfair Display', serif;">Busqueda Global</h2>
+      <p class="text-muted small m-0 text-uppercase tracking-widest">Resultados en todas las interfaces</p>
+    </div>
+    {% if q %}
+    <span class="badge bg-light text-dark border px-3 py-2 rounded-pill">Consulta: {{ q }}</span>
+    {% endif %}
+  </div>
+
+  {% if not q %}
+  <div class="glass-panel p-4 border-0 shadow-sm">
+    <p class="m-0 text-muted">Escribe una busqueda en la barra superior para consultar productos, clientes, ventas y creditos.</p>
+  </div>
+  {% else %}
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="glass-panel p-4 border-0 shadow-sm h-100">
+        <h5 class="fw-bold mb-3"><i class="bi bi-box-seam me-2 text-primary"></i>Productos ({{ productos|length }})</h5>
+        {% if productos %}
+        <div class="d-flex flex-column gap-2">
+          {% for p in productos %}
+          <a href="{{ url_for('admin', q=p.nombre) if rol == 'bodega' else url_for('punto_venta', categoria=(p.categoria_rel.nombre if p.categoria_rel else 'Todas')) }}" class="text-decoration-none">
+            <div class="p-3 rounded-4 border bg-white d-flex justify-content-between align-items-center">
+              <div>
+                <div class="fw-bold text-dark">{{ p.nombre }}</div>
+                <div class="small text-muted">{{ p.categoria_rel.nombre if p.categoria_rel else 'General' }}</div>
+              </div>
+              <div class="fw-bold text-primary">${{ "{:,.0f}".format(p.precio or 0) }}</div>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="small text-muted">Sin resultados.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="glass-panel p-4 border-0 shadow-sm h-100">
+        <h5 class="fw-bold mb-3"><i class="bi bi-people me-2 text-primary"></i>Clientes ({{ clientes_res|length }})</h5>
+        {% if clientes_res %}
+        <div class="d-flex flex-column gap-2">
+          {% for c in clientes_res %}
+          {% if rol == 'admin' %}
+          <a href="{{ url_for('clientes') }}" class="text-decoration-none">
+          {% endif %}
+            <div class="p-3 rounded-4 border bg-white d-flex justify-content-between align-items-center">
+              <div>
+                <div class="fw-bold text-dark">{{ c.nombre }}</div>
+                <div class="small text-muted">{{ c.telefono or 'Sin telefono' }} · {{ c.direccion or 'Sin direccion' }}</div>
+              </div>
+              <div class="fw-bold {{ 'text-danger' if (c.deuda or 0) > 0 else 'text-success' }}">${{ "{:,.0f}".format(c.deuda or 0) }}</div>
+            </div>
+          {% if rol == 'admin' %}
+          </a>
+          {% endif %}
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="small text-muted">Sin resultados.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="glass-panel p-4 border-0 shadow-sm h-100">
+        <h5 class="fw-bold mb-3"><i class="bi bi-receipt me-2 text-primary"></i>Ventas ({{ ventas_res|length }})</h5>
+        {% if ventas_res %}
+        <div class="d-flex flex-column gap-2">
+          {% for v in ventas_res %}
+          {% if rol == 'admin' %}
+          <a href="{{ url_for('historial_ventas', venta_id=v.id) }}" class="text-decoration-none">
+          {% endif %}
+            <div class="p-3 rounded-4 border bg-white d-flex justify-content-between align-items-center">
+              <div>
+                <div class="fw-bold text-dark">Venta #{{ v.id }} · {{ v.cliente.nombre if v.cliente else 'Consumidor Final' }}</div>
+                <div class="small text-muted">{{ v.estado or '---' }} · {{ v.metodo_pago or '---' }}</div>
+              </div>
+              <div class="fw-bold text-primary">${{ "{:,.0f}".format(v.total or 0) }}</div>
+            </div>
+          {% if rol == 'admin' %}
+          </a>
+          {% endif %}
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="small text-muted">Sin resultados.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="glass-panel p-4 border-0 shadow-sm h-100">
+        <h5 class="fw-bold mb-3"><i class="bi bi-credit-card-2-front me-2 text-primary"></i>Creditos ({{ creditos_res|length }})</h5>
+        {% if creditos_res %}
+        <div class="d-flex flex-column gap-2">
+          {% for cr in creditos_res %}
+          {% if rol in ['admin', 'cobrador'] %}
+          <a href="{{ url_for('cobranzas', filtro='todos', credito_id=cr.id) }}" class="text-decoration-none">
+          {% endif %}
+            <div class="p-3 rounded-4 border bg-white d-flex justify-content-between align-items-center">
+              <div>
+                <div class="fw-bold text-dark">{{ cr.codigo }} · {{ cr.cliente.nombre if cr.cliente else 'Cliente' }}</div>
+                <div class="small text-muted">{{ cr.estado }} · {{ cr.numero_cuotas }} cuotas {{ (cr.periodicidad or '').lower() }}</div>
+              </div>
+              <div class="fw-bold text-danger">${{ "{:,.0f}".format(cr.saldo_actual or 0) }}</div>
+            </div>
+          {% if rol in ['admin', 'cobrador'] %}
+          </a>
+          {% endif %}
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="small text-muted">Sin resultados.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if rol == 'admin' %}
+    <div class="col-12">
+      <div class="glass-panel p-4 border-0 shadow-sm">
+        <h5 class="fw-bold mb-3"><i class="bi bi-person-badge me-2 text-primary"></i>Usuarios ({{ usuarios_res|length }})</h5>
+        {% if usuarios_res %}
+        <div class="row g-2">
+          {% for u in usuarios_res %}
+          <div class="col-md-4">
+            <a href="{{ url_for('usuarios') }}" class="text-decoration-none">
+              <div class="p-3 rounded-4 border bg-white">
+                <div class="fw-bold text-dark">{{ u.username }}</div>
+                <div class="small text-muted">{{ u.rol }} · {{ u.sede.nombre if u.sede else 'Sin sede' }}</div>
+              </div>
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="small text-muted">Sin resultados.</div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between mb-5 align-items-center animate-slide-in">
+    <div>
+        <h2 class="fw-bold m-0 text-dark" style="font-family: 'Playfair Display', serif;">Cierre de Caja Diario</h2>
+        <p class="text-muted small m-0 text-uppercase tracking-widest">Cuadre de ventas, gastos y flujo de efectivo</p>
+    </div>
+    <div class="d-flex gap-3">
+        <form class="d-flex bg-white rounded-pill shadow-sm border p-2 px-3 gap-2" method="GET">
+            {% if request.args.get('sede_id') %}
+            <input type="hidden" name="sede_id" value="{{ request.args.get('sede_id') }}">
+            {% endif %}
+            <i class="bi bi-calendar3 text-accent"></i>
+            <input type="date" name="fecha" value="{{ fecha }}"
+                class="form-control form-control-sm border-0 bg-transparent fw-bold" onchange="this.form.submit()">
+        </form>
+        <form class="d-flex bg-white rounded-pill shadow-sm border p-2 px-3 gap-2" method="GET">
+            <input type="hidden" name="fecha" value="{{ fecha }}">
+            <i class="bi bi-building text-accent"></i>
+            <select name="sede_id" class="form-select form-select-sm border-0 bg-transparent fw-bold ps-0" onchange="this.form.submit()">
+                <option value="">Todas las Sedes</option>
+                {% for s in sedes %}
+                <option value="{{ s.id }}" {% if sede_actual == s.id|string %}selected{% endif %}>{{ s.nombre }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        <a href="{{ url_for('descargar_cierre_pdf', fecha=fecha) }}"
+            class="btn btn-primary btn-sm shadow-accent fw-bold rounded-pill px-4 d-flex align-items-center gap-2">
+            <i class="bi bi-file-earmark-pdf"></i> DESCARGAR REPORTE
+        </a>
+    </div>
+</div>
+
+<div class="row g-4 mb-5 animate-fade-in">
+    <!-- Total Venta -->
+    <div class="col-md-4">
+        <div class="glass-panel p-4 h-100 border-0 shadow-lg position-relative overflow-hidden">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="text-muted small fw-bold text-uppercase tracking-widest">Recaudo Total Bruto</span>
+                <i class="bi bi-currency-dollar text-accent fs-4 opacity-75"></i>
+            </div>
+            <h2 class="fw-bold m-0 text-dark display-5" style="font-family: 'Outfit', sans-serif;">${{ "{:,.0f}".format(total_dia) }}</h2>
+            <div class="position-absolute bottom-0 start-0 w-100" style="height: 4px; background: var(--primary);"></div>
+        </div>
+    </div>
+
+    <!-- Efectivo -->
+    <div class="col-md-4">
+        <div class="glass-panel p-4 h-100 border-0 shadow-lg position-relative overflow-hidden">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="text-muted small fw-bold text-uppercase tracking-widest">Efectivo en Ventas</span>
+                <i class="bi bi-cash-stack text-success fs-4 opacity-75"></i>
+            </div>
+            <h2 class="fw-bold m-0 text-success display-5">${{ "{:,.0f}".format(total_efectivo) }}</h2>
+            <div class="position-absolute bottom-0 start-0 w-100" style="height: 4px; background: var(--success);"></div>
+        </div>
+    </div>
+
+    <!-- Digital -->
+    <div class="col-md-4">
+        <div class="glass-panel p-4 h-100 border-0 shadow-lg position-relative overflow-hidden">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="text-muted small fw-bold text-uppercase tracking-widest">Digital / Banco</span>
+                <i class="bi bi-bank text-primary fs-4 opacity-75"></i>
+            </div>
+            <h2 class="fw-bold m-0 text-primary display-5">${{ "{:,.0f}".format(total_digital) }}</h2>
+            <div class="position-absolute bottom-0 start-0 w-100" style="height: 4px; background: var(--primary-light);"></div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-md-8">
+        <!-- Sección Gastos -->
+        <div class="glass-panel border-0 shadow-lg overflow-hidden h-100">
+            <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-white">
+                <h5 class="fw-bold m-0 text-dark" style="font-family: 'Playfair Display', serif;"><i class="bi bi-cash-coin text-accent me-2"></i>Egresos y Gastos</h5>
+                <button class="btn btn-sm btn-glass rounded-pill px-4 fw-bold" onclick="newGasto()">
+                    <i class="bi bi-plus-lg me-1"></i> REGISTRAR EGRESO
+                </button>
+            </div>
+            <div class="p-0">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th class="ps-4">Hora</th>
+                            <th>Descripción</th>
+                            <th>Responsable</th>
+                            <th class="text-end pe-4">Monto</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for g in gastos %}
+                        <tr class="border-bottom-0">
+                            <td class="ps-4 text-muted small">{{ g.fecha.strftime('%H:%M') }}</td>
+                            <td class="fw-bold text-dark">{{ g.descripcion }}</td>
+                            <td><span class="badge bg-light text-primary border rounded-pill px-3">{{ g.usuario.username if g.usuario else '---' }}</span></td>
+                            <td class="text-end fw-bold text-danger">-${{ "{:,.0f}".format(g.monto) }}</td>
+                            <td class="text-end pe-4">
+                                <form method="POST" onsubmit="return confirm('¿Eliminar este gasto?')">
+                                    <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+                                    <input type="hidden" name="eliminar_gasto" value="1">
+                                    <input type="hidden" name="gasto_id" value="{{ g.id }}">
+                                    <button class="btn btn-sm btn-outline-danger border-0 rounded-circle"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="text-center text-muted py-5 opacity-50">No hay egresos registrados hoy.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Balance Final -->
+    <div class="col-md-4">
+        <div class="glass-panel p-4 border-0 shadow-lg caja-balance-card text-white h-100 d-flex flex-column justify-content-between">
+            <div>
+                <h5 class="fw-bold mb-4 caja-balance-title" style="font-family: 'Playfair Display', serif;"><i class="bi bi-calculator text-accent me-2"></i>Balance de Caja</h5>
+                
+                <div class="d-flex justify-content-between align-items-center mb-3 opacity-75">
+                    <span class="fw-bold text-uppercase caja-balance-label">Base Inicial</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fw-bold caja-balance-amount">${{ "{:,.0f}".format(base_caja) }}</span>
+                        <button class="btn btn-sm btn-outline-light border-0 p-1" onclick="modalBase()"><i class="bi bi-pencil-square"></i></button>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mb-3 opacity-75">
+                    <span class="fw-bold text-uppercase caja-balance-label">Ingresos Efectivo</span>
+                    <span class="fw-bold text-success-light caja-balance-amount">+ ${{ "{:,.0f}".format(total_efectivo) }}</span>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mb-4 opacity-75">
+                    <span class="fw-bold text-uppercase caja-balance-label">Egresos Totales</span>
+                    <span class="fw-bold text-danger-light caja-balance-amount">- ${{ "{:,.0f}".format(total_gastos) }}</span>
+                </div>
+
+                <div class="border-top border-white-50 pt-4 mb-2">
+                    <div class="fw-bold text-uppercase text-white-50 mb-1 caja-estimado-label">Monto Estimado en Caja</div>
+                    <h1 class="fw-bold mb-0 caja-estimado-value" style="color: var(--accent); font-family: 'Outfit', sans-serif;">${{ "{:,.0f}".format(dinero_en_caja) }}</h1>
+                </div>
+            </div>
+            
+            <div class="mt-4 p-3 bg-white-10 rounded-4 border border-white-10 caja-info-box">
+                <small class="opacity-75 caja-info-text"><i class="bi bi-info-circle me-1"></i> Este valor debe coincidir con el dinero físicamente presente en el cajón.</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detalle Ventas -->
+<div class="glass-panel border-0 shadow-lg overflow-hidden animate-fade-in delay-2">
+    <div class="p-4 border-bottom bg-white d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold m-0 text-dark" style="font-family: 'Playfair Display', serif;"><i class="bi bi-receipt text-accent me-2"></i>Historial de Movimientos</h5>
+        <span class="badge bg-light text-dark border px-3 rounded-pill">{{ ventas|length }} ventas registradas</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4">ID Transacción</th>
+                    <th>Estado / Sede</th>
+                    <th>Método de Pago</th>
+                    <th class="text-end">Monto Neto</th>
+                    <th class="text-end pe-4">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for v in ventas %}
+                <tr class="border-bottom">
+                    <td class="ps-4 py-3">
+                        <div class="fw-bold text-dark">#{{ v.id }}</div>
+                        <div class="small text-muted">{{ v.fecha_cierre.strftime('%H:%M') }}</div>
+                    </td>
+                    <td>
+                        <span class="badge bg-light border text-dark rounded-pill">{{ v.sede.nombre if v.sede else 'Sin Sede' }}</span>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi {{ 'bi-cash' if v.metodo_pago == 'Efectivo' else 'bi-credit-card' }} text-accent"></i>
+                            <span class="fw-bold text-dark">{{ v.metodo_pago }}</span>
+                        </div>
+                    </td>
+                    <td class="text-end fw-bold text-dark fs-5">${{ "{:,.0f}".format(v.total) }}</td>
+                    <td class="text-end pe-4">
+                        <a href="{{ url_for('imprimir_ticket', venta_id=v.id) }}" target="_blank"
+                            class="btn btn-sm btn-glass rounded-pill px-3 shadow-sm hover-scale">
+                            <i class="bi bi-printer me-1"></i> Ticket
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center py-5 text-muted opacity-50">
+                        <i class="bi bi-file-earmark-lock display-3 d-block mb-3"></i>
+                        No se han reportado ventas en este periodo.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modales -->
+<div class="modal fade" id="modalBase" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pt-4 px-4 pb-0">
+                <h5 class="fw-bold" style="font-family: 'Playfair Display', serif;">Definir Base en Caja</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form method="GET">
+                    <input type="hidden" name="actualizar_base" value="1">
+                    {% if request.args.get('sede_id') %}
+                    <input type="hidden" name="sede_id" value="{{ request.args.get('sede_id') }}">
+                    {% endif %}
+                    <input type="hidden" name="fecha" value="{{ fecha }}">
+                    <div class="mb-4 text-center">
+                        <label class="small text-muted text-uppercase fw-bold mb-2">Efectivo Inicial</label>
+                        <input type="number" name="base_caja" class="form-control form-control-lg fw-bold text-center border-accent fs-2" value="{{ base_caja }}">
+                    </div>
+                    <button class="btn btn-primary w-100 py-3 fw-bold">GUARDAR CONFIGURACIÓN</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalGasto" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pt-4 px-4 pb-0">
+                <h5 class="fw-bold" style="font-family: 'Playfair Display', serif;">Registrar Egreso de Efectivo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+                    <input type="hidden" name="nuevo_gasto" value="1">
+                    <div class="mb-3">
+                        <label class="fw-bold small text-muted text-uppercase tracking-wider mb-2">Sede Responsable</label>
+                        <select name="sede_id" class="form-select mb-4">
+                            <option value="">Balance Global / Oficina</option>
+                            {% for s in sedes %}
+                            <option value="{{ s.id }}">{{ s.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                        
+                        <label class="fw-bold small text-muted text-uppercase tracking-wider mb-2">Concepto del Gasto</label>
+                        <input type="text" name="descripcion" class="form-control mb-4" required placeholder="Ej: Compra insumos oficina">
+                        
+                        <label class="fw-bold small text-muted text-uppercase tracking-wider mb-2">Monto a Retirar</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-accent text-accent fw-bold">$</span>
+                            <input type="number" name="monto" class="form-control form-control-lg border-accent fw-bold" required placeholder="0">
+                        </div>
+                    </div>
+                    <button class="btn btn-danger w-100 fw-bold py-3 mt-4">AUTORIZAR SALIDA</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function modalBase(){ new bootstrap.Modal(document.getElementById('modalBase')).show(); }
+    function newGasto(){ new bootstrap.Modal(document.getElementById('modalGasto')).show(); }
+</script>
+{% endblock %}

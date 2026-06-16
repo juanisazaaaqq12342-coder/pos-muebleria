@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="animate-slide-in">
+  <div class="d-flex justify-content-between align-items-center mb-5">
+    <div>
+      <h2 class="fw-bold m-0 text-dark" style="font-family: 'Playfair Display', serif;">Equipo de Trabajo</h2>
+      <p class="text-muted small m-0 text-uppercase tracking-widest">Gestión de usuarios y permisos de acceso</p>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-md-4">
+      <div class="glass-panel p-4 shadow-lg border-0 h-100">
+        <h5 class="fw-bold mb-4 text-dark" style="font-family: 'Playfair Display', serif;"><i class="bi bi-person-plus text-accent me-2"></i>Nuevo Usuario</h5>
+        <form action="{{ url_for('usuarios') }}" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+          <div class="mb-3">
+              <label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Nombre de Acceso</label>
+              <input type="text" name="username" class="form-control" placeholder="Ej: admin_sede" required autocomplete="off">
+          </div>
+          <div class="mb-3">
+              <label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Contraseña</label>
+              <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+          </div>
+          <div class="mb-3">
+              <label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Rol en la Empresa</label>
+              <select name="rol" class="form-select fw-bold" id="rolSelect" onchange="toggleSede()">
+                  <option value="vendedor">Asesor Comercial (Vendedor)</option>
+                  <option value="bodega">Bodega / Inventario</option>
+                  <option value="cobrador">Cobrador / Cartera</option>
+                  <option value="admin">Administrador General</option>
+              </select>
+          </div>
+          <div class="mb-4" id="sedeDiv">
+              <label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Sede Asignada</label>
+              <select name="sede_id" class="form-select border-accent">
+                  <option value="">Seleccione una Sede...</option>
+                  {% for s in sedes %}
+                  <option value="{{ s.id }}">{{ s.nombre }}</option>
+                  {% endfor %}
+              </select>
+              <div class="form-text small text-accent fw-bold"><i class="bi bi-info-circle"></i> Obligatorio para Asesores</div>
+          </div>
+          <button class="btn btn-primary w-100 py-3 fw-bold shadow-accent">CREAR ACCESO</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="col-md-8">
+      <div class="glass-panel p-4 shadow-lg border-0 h-100">
+        <h5 class="fw-bold mb-4 text-dark" style="font-family: 'Playfair Display', serif;"><i class="bi bi-shield-lock text-accent me-2"></i>Accesos Activos</h5>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th class="ps-3">Identificador</th>
+                <th>Rol</th>
+                <th class="text-end pe-3">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+                {% for u in usuarios %}
+                <tr class="border-bottom">
+                    <td class="ps-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; font-weight: bold;">
+                                {{ u.username[0].upper() }}
+                            </div>
+                            <span class="fw-bold text-dark fs-5">{{ u.username }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge rounded-pill px-3 py-2 fw-bold 
+                            {{ 'bg-primary shadow-sm' if u.rol == 'admin' else ('bg-warning text-dark' if u.rol == 'bodega' else 'bg-light text-primary border') }}">
+                            {{ u.rol | upper }}
+                        </span>
+                    </td>
+                    <td class="text-end pe-3">
+                        <button type="button" class="btn btn-sm btn-outline-primary border-0 rounded-circle me-1"
+                                data-bs-toggle="modal"
+                                data-bs-target="#claveUsuario{{ u.id }}"
+                                title="Cambiar clave">
+                            <i class="bi bi-key-fill fs-5"></i>
+                        </button>
+                        {% if u.id != session['user_id'] %}
+                        <form action="{{ url_for('eliminar_usuario', user_id=u.id) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Confirma la eliminación de este usuario?');">
+                            <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger border-0 rounded-circle">
+                                <i class="bi bi-trash-fill fs-5"></i>
+                            </button>
+                        </form>
+                        {% else %}
+                        <span class="badge bg-success-subtle text-success border px-3 rounded-pill">SESIÓN ACTUAL</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% for u in usuarios %}
+<div class="modal fade" id="claveUsuario{{ u.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+      <div class="modal-header bg-dark text-white">
+        <div>
+          <h5 class="modal-title fw-bold mb-0">Cambiar clave</h5>
+          <div class="small text-white-50">{{ u.username }} - {{ u.rol | upper }}</div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="{{ url_for('cambiar_clave_usuario', user_id=u.id) }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+        <div class="modal-body p-4">
+          <div class="mb-3">
+            <label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Nueva clave</label>
+            <input type="password" name="nueva_clave" class="form-control" minlength="4" required autocomplete="new-password">
+          </div>
+          <div>
+            <label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Confirmar clave</label>
+            <input type="password" name="confirmar_clave" class="form-control" minlength="4" required autocomplete="new-password">
+          </div>
+        </div>
+        <div class="modal-footer bg-light border-0">
+          <button type="button" class="btn btn-outline-dark px-4" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary px-4 fw-bold">
+            <i class="bi bi-check-circle me-1"></i> Guardar clave
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+<script>
+function toggleSede() {
+    const rol = document.getElementById("rolSelect").value;
+    const sedeDiv = document.getElementById("sedeDiv");
+    if (rol === "vendedor") {
+        sedeDiv.style.opacity = "1";
+        sedeDiv.style.pointerEvents = "auto";
+    } else {
+        sedeDiv.style.opacity = "0.5";
+        sedeDiv.style.pointerEvents = "none";
+    }
+}
+document.addEventListener("DOMContentLoaded", toggleSede);
+</script>
+{% endblock %}

@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8">
+  <title>Acceso | {{ configuracion.nombre_empresa }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0f172a url("{{ url_for('static', filename='img/ui/bg_login.png') }}") no-repeat center center fixed;
+      background-size: cover;
+      position: relative;
+    }
+
+    body::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.4) 100%);
+      z-index: 0;
+    }
+
+    .login-container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 450px;
+      padding: 1rem;
+    }
+
+    .login-card {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-xl);
+      padding: 3rem 2.5rem;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.5);
+    }
+
+    .input-group-custom {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      transition: all 0.3s;
+    }
+
+    .input-group-custom:focus-within {
+      border-color: var(--accent);
+      background: rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 0 4px rgba(193, 154, 107, 0.2);
+    }
+
+    .input-group-custom input {
+      background: transparent;
+      border: none;
+      color: white;
+      padding: 0.75rem 1rem;
+    }
+
+    .input-group-custom input:focus {
+      background: transparent;
+      outline: none;
+      box-shadow: none;
+      color: white;
+    }
+
+    .input-group-custom i {
+      padding-left: 1rem;
+      color: var(--accent);
+    }
+
+    .brand-accent {
+      font-family: 'Playfair Display', serif;
+      color: var(--accent);
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .logo-login-muebleria {
+      width: 56px;
+      height: 56px;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(0, 43, 115, 0.2);
+      border-radius: 14px;
+      padding: 8px;
+      display: inline-block;
+      margin-bottom: 0.75rem;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="login-container">
+    <div class="login-card animate-slide-in">
+      <div class="text-center mb-5">
+        <img src="{{ url_for('static', filename='img/logo_muebleria.svg') }}" alt="Logo Muebleria La Mejor" class="logo-login-muebleria">
+        <div class="brand-accent">{{ configuracion.nombre_empresa }}</div>
+        <div class="text-white-50 small text-uppercase tracking-widest fw-bold">Gestión de Inventario y Ventas</div>
+      </div>
+
+      {% with m=get_flashed_messages(with_categories=true) %}
+      {% if m %}
+      {% for c,t in m %}
+      <div class="alert alert-{{c}} py-2 small shadow-sm border-0 mb-4 animate-fade-in">{{t}}</div>
+      {% endfor %}
+      {% endif %}
+      {% endwith %}
+
+      <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+        <div class="mb-4">
+          <label class="form-label text-white-50 mb-2">Nombre de Usuario</label>
+          <div class="input-group-custom d-flex align-items-center">
+            <i class="bi bi-person h5 m-0"></i>
+            <input type="text" name="username" class="form-control" placeholder="Ingresa tu usuario" required autofocus>
+          </div>
+        </div>
+
+        <div class="mb-5">
+          <label class="form-label text-white-50 mb-2">Contraseña</label>
+          <div class="input-group-custom d-flex align-items-center">
+            <i class="bi bi-lock h5 m-0"></i>
+            <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 py-3 fw-bold fs-5 mb-4">
+          INICIAR SESIÓN
+        </button>
+
+        <div class="text-center">
+          <small class="text-white-50 opacity-50">&copy; 2025 {{ configuracion.nombre_empresa }}. Todos los derechos reservados.</small>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+
+</html>

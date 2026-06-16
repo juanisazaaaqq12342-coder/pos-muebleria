@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="h-desktop-fixed animate-slide-in d-flex flex-column gap-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <div>
+        <h3 class="fw-bold m-0 text-dark" style="font-family: 'Playfair Display', serif;">Gestión de Sedes</h3>
+        <p class="text-muted small m-0 text-uppercase tracking-widest">Administración de sucursales y puntos de exhibición</p>
+    </div>
+    <button class="btn btn-primary rounded-pill px-4 fw-bold shadow-accent" data-bs-toggle="modal" data-bs-target="#modalNuevaSede">
+        <i class="bi bi-plus-lg me-2"></i> AGREGAR SEDE
+    </button>
+  </div>
+
+  <div class="glass-panel p-0 border-0 shadow-lg flex-grow-1 overflow-hidden d-flex flex-column">
+    <div class="table-responsive flex-grow-1 overflow-auto custom-scrollbar">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="bg-light sticky-top">
+          <tr>
+            <th class="ps-4">Nombre de la Sede</th>
+            <th>Dirección</th>
+            <th>Teléfono</th>
+            <th class="text-center">Estado</th>
+            <th class="text-end pe-4">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in sedes %}
+          <tr class="border-bottom">
+            <td class="ps-4">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-primary-light text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                        <i class="bi bi-building"></i>
+                    </div>
+                    <span class="fw-bold text-dark fs-6">{{ s.nombre }}</span>
+                </div>
+            </td>
+            <td class="text-muted">{{ s.direccion or '---' }}</td>
+            <td class="text-muted">{{ s.telefono or '---' }}</td>
+            <td class="text-center">
+                <span class="badge rounded-pill px-3 {{ 'bg-success' if s.activa else 'bg-secondary' }}">
+                    {{ 'Activa' if s.activa else 'Inactiva' }}
+                </span>
+            </td>
+            <td class="text-end pe-4">
+              <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-sm btn-glass rounded-circle"><i class="bi bi-pencil"></i></button>
+                {% if s.id != 1 %} {# Evitar borrar sede principal #}
+                <button class="btn btn-sm btn-outline-danger border-0 rounded-circle"><i class="bi bi-trash"></i></button>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5" class="text-center py-5 text-muted opacity-50">
+              <i class="bi bi-geo-alt display-2 d-block mb-3"></i>
+              No hay sedes registradas en el sistema.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Nueva Sede -->
+<div class="modal fade" id="modalNuevaSede" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header border-bottom-0 pt-4 px-4 pb-0">
+        <h5 class="modal-title fw-bold" style="font-family: 'Playfair Display', serif;">Crear Nueva Sede</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="{{ url_for('sedes') }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+        <div class="modal-body p-4">
+          <div class="mb-4">
+            <label class="form-label fw-bold small text-muted text-uppercase tracking-wider">Nombre del Punto</label>
+            <input type="text" name="nombre" class="form-control form-control-lg" required placeholder="Ej. Showroom Centro">
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-bold small text-muted text-uppercase tracking-wider">Dirección Física</label>
+            <input type="text" name="direccion" class="form-control" placeholder="Calle # - Barrio">
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-bold small text-muted text-uppercase tracking-wider">Teléfono de Contacto</label>
+            <input type="text" name="telefono" class="form-control" placeholder="Ej. 300 000 0000">
+          </div>
+        </div>
+        <div class="modal-footer border-top-0 p-4 pt-0">
+          <button type="button" class="btn btn-glass px-4 rounded-pill fw-bold" data-bs-dismiss="modal">CANCELAR</button>
+          <button type="submit" class="btn btn-primary px-5 rounded-pill fw-bold shadow-accent">GUARDAR SEDE</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

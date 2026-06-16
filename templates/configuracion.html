@@ -1,0 +1,91 @@
+﻿{% extends "base.html" %}
+{% block content %}
+<div class="col-12 animate-slide-in py-5">
+    <div class="glass-panel p-5 border-0 shadow-xl overflow-hidden position-relative">
+        <div class="brand-accent-decoration" style="position: absolute; top:0; right: 0; width: 150px; height: 150px; background: linear-gradient(135deg, transparent 50%, rgba(193, 154, 107, 0.1) 100%); z-index: 0;"></div>
+        
+        <div class="text-center mb-5 position-relative" style="z-index: 1;">
+            <div class="bg-dark text-accent p-4 rounded-circle d-inline-block mb-3 shadow-lg border border-accent border-opacity-20">
+                <i class="bi bi-sliders display-4"></i>
+            </div>
+            <h2 class="fw-bold text-dark" style="font-family: 'Playfair Display', serif;">Ajustes del Sistema</h2>
+            <p class="text-muted text-uppercase tracking-widest small">Identidad Corporativa · Crédito a Cuota Fija</p>
+        </div>
+
+        <form method="POST" class="position-relative" style="z-index: 1;">
+            <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+            
+            <div class="mb-4 p-4 rounded-4 bg-light bg-opacity-50 border">
+                <h5 class="fw-bold mb-4 text-dark"><i class="bi bi-gem text-accent me-2"></i>Identidad Corporativa</h5>
+                <div class="row g-4">
+                    <div class="col-12">
+                        <label class="form-label text-muted fw-bold small text-uppercase">Nombre de la Empresa / Boutique</label>
+                        <input type="text" name="nombre_empresa" class="form-control border-accent-subtle bg-white fw-bold"
+                            value="{{ conf.nombre_empresa }}" placeholder="Eje: Muebles Elite SA">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted fw-bold small text-uppercase">NIT / RUT</label>
+                        <input type="text" name="nit" class="form-control border-accent-subtle bg-white" value="{{ conf.nit }}" placeholder="000.000.000-0">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted fw-bold small text-uppercase">Teléfono</label>
+                        <input type="text" name="telefono" class="form-control border-accent-subtle bg-white" value="{{ conf.telefono }}" placeholder="+57 300 000 0000">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label text-muted fw-bold small text-uppercase">Dirección Principal</label>
+                        <input type="text" name="direccion" class="form-control border-accent-subtle bg-white" value="{{ conf.direccion }}" placeholder="Calle, Carrera, Ciudad">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label text-muted fw-bold small text-uppercase">Mensaje en Ticket / Cotización</label>
+                        <textarea name="mensaje_ticket" class="form-control border-accent-subtle bg-white" rows="2">{{ conf.mensaje_ticket }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-4 p-4 rounded-4 border border-warning border-opacity-25 bg-warning bg-opacity-10">
+                <h5 class="fw-bold mb-1 text-dark"><i class="bi bi-calendar-week text-warning me-2"></i>Configuración de Crédito (Cuota Fija)</h5>
+                <p class="text-muted small mb-4">Los créditos se calculan sin intereses. Edita aquí las opciones del selector de día de pago.</p>
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted fw-bold small text-uppercase">Mora por Atraso (%)</label>
+                        <div class="input-group">
+                            <input type="number" name="mora_porcentaje" class="form-control fw-bold text-center"
+                                value="{{ conf.mora_porcentaje or 2.0 }}" min="0" max="100" step="0.1">
+                            <span class="input-group-text fw-bold">%</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted fw-bold small text-uppercase">Días de Gracia</label>
+                        <input type="number" name="dias_gracia" class="form-control fw-bold text-center"
+                            value="{{ conf.dias_gracia or 0 }}" min="0" max="30">
+                        <div class="form-text text-muted small">0 = sin gracia</div>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label text-muted fw-bold small text-uppercase">Opciones día de pago - Semanal</label>
+                        <textarea name="dias_pago_semanal_conf" class="form-control bg-white" rows="4">{{ dias_pago_semanal_txt }}</textarea>
+                        <div class="form-text text-muted small">Formato por línea: <code>valor|etiqueta</code>. Valores: 0 a 6 (0=Domingo, 1=Lunes, ... 6=Sábado).</div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label text-muted fw-bold small text-uppercase">Opciones día de pago - Quincenal</label>
+                        <textarea name="dias_pago_quincenal_conf" class="form-control bg-white" rows="5">{{ dias_pago_quincenal_txt }}</textarea>
+                        <div class="form-text text-muted small">Formato por línea: <code>valor|etiqueta</code>. Valores: 1 a 31.</div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label text-muted fw-bold small text-uppercase">Opciones día de pago - Mensual</label>
+                        <textarea name="dias_pago_mensual_conf" class="form-control bg-white" rows="5">{{ dias_pago_mensual_txt }}</textarea>
+                        <div class="form-text text-muted small">Formato por línea: <code>valor|etiqueta</code>. Valores: 1 a 28.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-grid mt-4">
+                <button class="btn btn-primary fw-bold py-3 shadow-accent fs-5 text-uppercase">
+                    <i class="bi bi-check2-circle me-2"></i> GUARDAR CONFIGURACIÓN
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
