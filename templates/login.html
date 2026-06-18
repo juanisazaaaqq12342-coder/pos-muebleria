@@ -79,6 +79,25 @@
       color: var(--accent);
     }
 
+    .password-toggle-btn {
+      border: none;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.75);
+      width: 48px;
+      height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s ease, transform 0.2s ease;
+    }
+
+    .password-toggle-btn:hover,
+    .password-toggle-btn:focus {
+      color: var(--accent-light);
+      outline: none;
+      transform: scale(1.04);
+    }
+
     .brand-accent {
       font-family: 'Playfair Display', serif;
       color: var(--accent);
@@ -130,7 +149,10 @@
           <label class="form-label text-white-50 mb-2">Contraseña</label>
           <div class="input-group-custom d-flex align-items-center">
             <i class="bi bi-lock h5 m-0"></i>
-            <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+            <input id="passwordInput" type="password" name="password" class="form-control" placeholder="••••••••" required>
+            <button id="togglePasswordBtn" type="button" class="password-toggle-btn" aria-label="Mostrar clave" aria-pressed="false">
+              <i id="togglePasswordIcon" class="bi bi-eye"></i>
+            </button>
           </div>
         </div>
 
@@ -144,6 +166,21 @@
       </form>
     </div>
   </div>
+  <script>
+    const passwordInput = document.getElementById('passwordInput');
+    const togglePasswordBtn = document.getElementById('togglePasswordBtn');
+    const togglePasswordIcon = document.getElementById('togglePasswordIcon');
+
+    if (passwordInput && togglePasswordBtn && togglePasswordIcon) {
+      togglePasswordBtn.addEventListener('click', function () {
+        const visible = passwordInput.type === 'text';
+        passwordInput.type = visible ? 'password' : 'text';
+        togglePasswordIcon.className = visible ? 'bi bi-eye' : 'bi bi-eye-slash';
+        togglePasswordBtn.setAttribute('aria-pressed', visible ? 'false' : 'true');
+        togglePasswordBtn.setAttribute('aria-label', visible ? 'Mostrar clave' : 'Ocultar clave');
+      });
+    }
+  </script>
 </body>
 
 </html>
