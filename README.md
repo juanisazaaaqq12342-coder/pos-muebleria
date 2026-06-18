@@ -37,6 +37,17 @@ Archivos clave:
 - Desarrollo local: SQLite en `instance/pos_v2.db`
 - Produccion recomendada: Postgres en Render con `DATABASE_URL`
 
+## Admin bootstrap sincronizable
+
+Si creas un admin nuevo solo en la SQLite local, ese cambio no viaja por Git porque `instance/pos_v2.db` esta ignorada.
+
+Para recrear el mismo admin en otros entornos, define estas variables antes de arrancar la app:
+
+- `BOOTSTRAP_ADMIN_USERNAME`
+- `BOOTSTRAP_ADMIN_PASSWORD`
+
+Al iniciar, el sistema crea ese usuario admin solo si no existe y no modifica usuarios previos.
+
 ## Dominio
 
 El proyecto puede publicarse en Render y exponerse con dominio propio manejado en Cloudflare.

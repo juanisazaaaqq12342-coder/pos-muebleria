@@ -868,6 +868,37 @@ def agrupar_items_venta(venta):
             }
     return list(agrupados.values())
 
+def asegurar_admin_bootstrap_desde_entorno():
+    """
+    Crea un admin adicional desde variables de entorno si no existe.
+    No modifica usuarios existentes ni cambia claves previas.
+    """
+    username = (os.environ.get("BOOTSTRAP_ADMIN_USERNAME") or "").strip()
+    password = os.environ.get("BOOTSTRAP_ADMIN_PASSWORD") or ""
+    if not username or len(password) < 4:
+        return False
+
+    if Usuario.query.filter_by(username=username).first():
+        return False
+
+    sede_admin = Sede.query.filter_by(activa=True).order_by(Sede.id.asc()).first()
+    if not sede_admin:
+        sede_admin = Sede(
+            nombre="Sede Principal",
+            direccion="Direccion Principal",
+            telefono="0000000000"
+        )
+        db.session.add(sede_admin)
+        db.session.flush()
+
+    db.session.add(Usuario(
+        username=username,
+        password_hash=generate_password_hash(password),
+        rol="admin",
+        sede_id=sede_admin.id
+    ))
+    return True
+
 def crear_datos_iniciales():
     """Crea las tablas y los datos iniciales del sistema."""
     with app.app_context():
@@ -875,6 +906,7 @@ def crear_datos_iniciales():
         asegurar_columnas_configuracion()
         asegurar_columnas_cliente()
         asegurar_password_hash_largo()
+        cambios_pendientes = False
         if not Usuario.query.filter_by(username="admin").first():
             # Sedes
             # Sedes
@@ -892,8 +924,15 @@ def crear_datos_iniciales():
             db.session.add(cliente_demo)
             db.session.flush()
             sincronizar_cartera_cliente(cliente_demo.id)
-            db.session.commit()
+            cambios_pendientes = True
             print(">>> SISTEMA MUEBLERíA LISTO")
+
+        if asegurar_admin_bootstrap_desde_entorno():
+            cambios_pendientes = True
+            print(">>> ADMIN BOOTSTRAP ASEGURADO DESDE ENTORNO")
+
+        if cambios_pendientes:
+            db.session.commit()
 
 # ==========================
 # RUTAS SISTEMA
