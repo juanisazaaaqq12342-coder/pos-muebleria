@@ -870,16 +870,13 @@ def agrupar_items_venta(venta):
 
 def asegurar_admin_bootstrap_desde_entorno():
     """
-    Crea un admin adicional desde variables de entorno si no existe.
-    No modifica usuarios existentes ni cambia claves previas.
+    Crea o sincroniza un admin adicional desde variables de entorno.
+    No modifica usuarios distintos al bootstrap indicado.
     """
     username = (os.environ.get("BOOTSTRAP_ADMIN_USERNAME") or "").strip()
     password = os.environ.get("BOOTSTRAP_ADMIN_PASSWORD") or ""
     if not username or len(password) < 4:
-        return False
-
-    if Usuario.query.filter_by(username=username).first():
-        return False
+        return None
 
     sede_admin = Sede.query.filter_by(activa=True).order_by(Sede.id.asc()).first()
     if not sede_admin:
@@ -891,13 +888,27 @@ def asegurar_admin_bootstrap_desde_entorno():
         db.session.add(sede_admin)
         db.session.flush()
 
+    existente = Usuario.query.filter_by(username=username).first()
+    if existente:
+        cambios = False
+        if not check_password_hash(existente.password_hash, password):
+            existente.password_hash = generate_password_hash(password)
+            cambios = True
+        if existente.rol != "admin":
+            existente.rol = "admin"
+            cambios = True
+        if not existente.sede_id:
+            existente.sede_id = sede_admin.id
+            cambios = True
+        return "updated" if cambios else None
+
     db.session.add(Usuario(
         username=username,
         password_hash=generate_password_hash(password),
         rol="admin",
         sede_id=sede_admin.id
     ))
-    return True
+    return "created"
 
 def crear_datos_iniciales():
     """Crea las tablas y los datos iniciales del sistema."""
@@ -927,9 +938,10 @@ def crear_datos_iniciales():
             cambios_pendientes = True
             print(">>> SISTEMA MUEBLERíA LISTO")
 
-        if asegurar_admin_bootstrap_desde_entorno():
+        estado_bootstrap_admin = asegurar_admin_bootstrap_desde_entorno()
+        if estado_bootstrap_admin:
             cambios_pendientes = True
-            print(">>> ADMIN BOOTSTRAP ASEGURADO DESDE ENTORNO")
+            print(f">>> ADMIN BOOTSTRAP {estado_bootstrap_admin.upper()} DESDE ENTORNO")
 
         if cambios_pendientes:
             db.session.commit()

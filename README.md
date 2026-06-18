@@ -46,7 +46,7 @@ Para recrear el mismo admin en otros entornos, define estas variables antes de a
 - `BOOTSTRAP_ADMIN_USERNAME`
 - `BOOTSTRAP_ADMIN_PASSWORD`
 
-Al iniciar, el sistema crea ese usuario admin solo si no existe y no modifica usuarios previos.
+Al iniciar, el sistema crea ese usuario admin si no existe. Si ya existe, sincroniza su clave con `BOOTSTRAP_ADMIN_PASSWORD` sin tocar otros usuarios.
 
 ## Dominio
 

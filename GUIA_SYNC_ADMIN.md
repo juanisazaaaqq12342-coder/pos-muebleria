@@ -9,10 +9,10 @@ Si creaste un usuario admin nuevo en tu SQLite local, ese cambio no viaja por Gi
 3. Guarda los cambios.
 4. Haz un redeploy del servicio.
 
-Al arrancar, la app crea ese admin solo si todavia no existe y no modifica admins previos.
+Al arrancar, la app crea ese admin si todavia no existe. Si ya existe, sincroniza su clave con `BOOTSTRAP_ADMIN_PASSWORD` y no modifica otros admins.
 
 ## Importante
 
 - No subas `instance/pos_v2.db` al repo.
 - No hardcodees la clave en `app.py`, `render.yaml` ni `.bat`.
-- Si el usuario ya existe, el bootstrap no lo pisa ni cambia su password.
+- El bootstrap solo afecta al usuario indicado en `BOOTSTRAP_ADMIN_USERNAME`.
