@@ -237,8 +237,8 @@
                 </div>
               </div>
 
-              <label class="form-label text-muted small fw-bold text-uppercase mb-0">Fecha de Inicio</label>
-              <input type="date" name="fecha_inicio_credito" id="cotizacionFechaInicioInput" class="form-control" onchange="calcularCotizacionRapida()">
+              <input type="hidden" name="fecha_inicio_credito" id="cotizacionFechaInicioInput">
+              <div class="small text-muted mt-1">Fecha de inicio automatica: hoy.</div>
 
               <div class="p-3 rounded-4 border bg-white mt-1">
                 <div class="row g-2 text-center">
@@ -512,15 +512,20 @@
                   </div>
                   <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
                     <div class="small text-muted m-0">Referencia 2</div>
-                    <button type="button" id="agregarSegundaReferenciaBtn" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="mostrarSegundaReferenciaCredito()">
-                      <i class="bi bi-plus-circle me-1"></i>Agregar segunda referencia
-                    </button>
+                    <div class="d-flex gap-2">
+                      <button type="button" id="agregarSegundaReferenciaBtn" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="mostrarSegundaReferenciaCredito()">
+                        <i class="bi bi-plus-circle me-1"></i>Agregar segunda referencia
+                      </button>
+                      <button type="button" id="quitarSegundaReferenciaBtn" class="btn btn-outline-danger btn-sm rounded-pill px-3 d-none" onclick="ocultarSegundaReferenciaCredito()">
+                        <i class="bi bi-dash-circle me-1"></i>Quitar segunda referencia
+                      </button>
+                    </div>
                   </div>
                   <div id="segundaReferenciaCreditoFields" class="row g-2 d-none">
-                    <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref2_nombre" placeholder="Nombre"></div>
-                    <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref2_parentesco" placeholder="Parentesco"></div>
-                    <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref2_celular" placeholder="Celular"></div>
-                    <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref2_direccion" placeholder="Direccion"></div>
+                    <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref2_nombre" placeholder="Nombre" disabled></div>
+                    <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref2_parentesco" placeholder="Parentesco" disabled></div>
+                    <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref2_celular" placeholder="Celular" disabled></div>
+                    <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref2_direccion" placeholder="Direccion" disabled></div>
                   </div>
                 </div>
               </div>
@@ -549,13 +554,26 @@
                 </div>
               </div>
               <div class="mb-3 d-none" id="diaPagoCreditoWrap">
-                <label class="form-label text-muted small fw-bold text-uppercase">Día de Pago</label>
+                <label class="form-label text-muted small fw-bold text-uppercase" id="diaPagoCreditoLabel">Dia de Pago</label>
                 <select name="dia_pago_credito" id="diaPagoCreditoInput" class="form-select" onchange="calcularCredito()"></select>
+                <div class="row g-2 mt-2 d-none" id="diaPagoCreditoQuincenalWrap">
+                  <div class="col-6">
+                    <label class="form-label text-muted small fw-bold text-uppercase">Primer dia</label>
+                    <select name="dia_pago_credito_1" id="diaPagoCreditoInput1" class="form-select" onchange="normalizarSeleccionQuincenal(1);calcularCredito()"></select>
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label text-muted small fw-bold text-uppercase">Segundo dia</label>
+                    <select name="dia_pago_credito_2" id="diaPagoCreditoInput2" class="form-select" onchange="normalizarSeleccionQuincenal(2);calcularCredito()"></select>
+                  </div>
+                  <div class="col-12">
+                    <div class="small text-muted">Escoge dos dias libres del 1 al 31.</div>
+                  </div>
+                </div>
               </div>
               <!-- Fecha inicio -->
               <div class="mb-3">
-                <label class="form-label text-muted small fw-bold text-uppercase">Fecha de Inicio</label>
-                <input type="date" name="fecha_inicio_credito" id="fechaInicioCredito" class="form-control" onchange="calcularCredito()">
+                <input type="hidden" name="fecha_inicio_credito" id="fechaInicioCredito">
+                <div class="small text-muted">Fecha de inicio automatica: hoy.</div>
               </div>
               <!-- Resumen calculado -->
               <div id="resumenCredito" class="d-none">
@@ -630,30 +648,8 @@
             {value:'6', label:'Sabado'},
             {value:'0', label:'Domingo'}
         ],
-        Quincenal: [
-            {value:'16', label:'Dia 16'},
-            {value:'17', label:'Dia 17'},
-            {value:'18', label:'Dia 18'},
-            {value:'19', label:'Dia 19'},
-            {value:'20', label:'Dia 20'},
-            {value:'1', label:'Dia 1'},
-            {value:'2', label:'Dia 2'},
-            {value:'3', label:'Dia 3'},
-            {value:'4', label:'Dia 4'},
-            {value:'5', label:'Dia 5'}
-        ],
-        Mensual: [
-            {value:'1', label:'Dia 1'},
-            {value:'2', label:'Dia 2'},
-            {value:'3', label:'Dia 3'},
-            {value:'4', label:'Dia 4'},
-            {value:'5', label:'Dia 5'},
-            {value:'6', label:'Dia 6'},
-            {value:'7', label:'Dia 7'},
-            {value:'8', label:'Dia 8'},
-            {value:'9', label:'Dia 9'},
-            {value:'10', label:'Dia 10'}
-        ]
+        Quincenal: Array.from({length: 31}, (_, i) => ({value:String(i + 1), label:`Dia ${i + 1}`})),
+        Mensual: Array.from({length: 30}, (_, i) => ({value:String(i + 1), label:`Dia ${i + 1}`}))
     };
     var opcionesDiaPago = JSON.parse(JSON.stringify(opcionesDiaPagoFallback));
     var modoCreditoActivo = false;
@@ -831,34 +827,121 @@
     function actualizarOpcionesDiaPagoCredito() {
         const period = document.getElementById('periodicidadCreditoInput')?.value || 'Mensual';
         const wrap = document.getElementById('diaPagoCreditoWrap');
+        const label = document.getElementById('diaPagoCreditoLabel');
         const select = document.getElementById('diaPagoCreditoInput');
-        if(!wrap || !select) return;
+        const quincenalWrap = document.getElementById('diaPagoCreditoQuincenalWrap');
+        const select1 = document.getElementById('diaPagoCreditoInput1');
+        const select2 = document.getElementById('diaPagoCreditoInput2');
+        if(!wrap || !select || !quincenalWrap || !select1 || !select2) return;
 
-        const previo = select.value || '';
         let opciones = (opcionesDiaPago && opcionesDiaPago[period]) ? opcionesDiaPago[period] : [];
         if(!opciones || !opciones.length){
             opciones = (opcionesDiaPagoFallback && opcionesDiaPagoFallback[period]) ? opcionesDiaPagoFallback[period] : [];
         }
-        select.innerHTML = opciones.map(op => `<option value="${op.value}">${op.label}</option>`).join('');
-        if(opciones.some(op => op.value === previo)) select.value = previo;
-        if(!select.value && opciones.length) select.value = String(opciones[0].value);
+        const html = opciones.map(op => `<option value="${op.value}">${op.label}</option>`).join('');
+
+        if(period === 'Quincenal'){
+            const previo1 = select1.value || '1';
+            const previo2 = select2.value || '15';
+            select.innerHTML = '';
+            select.disabled = true;
+            select.classList.add('d-none');
+            select1.disabled = false;
+            select2.disabled = false;
+            select1.innerHTML = html;
+            select2.innerHTML = html;
+            if(opciones.some(op => op.value === previo1)) select1.value = previo1;
+            if(!select1.value && opciones.length) select1.value = String(opciones[0].value);
+            if(opciones.some(op => op.value === previo2)) select2.value = previo2;
+            if(!select2.value && opciones.length) select2.value = String(opciones[Math.min(14, opciones.length - 1)].value);
+            if(select1.value === select2.value && opciones.length > 1){
+                const alternativa = opciones.find(op => op.value !== select1.value);
+                if(alternativa) select2.value = alternativa.value;
+            }
+            quincenalWrap.classList.remove('d-none');
+            if(label) label.innerText = 'Dias de Pago';
+        } else {
+            const previo = select.value || '';
+            select.disabled = false;
+            select.classList.remove('d-none');
+            select.innerHTML = html;
+            if(opciones.some(op => op.value === previo)) select.value = previo;
+            if(!select.value && opciones.length) select.value = String(opciones[0].value);
+            select1.disabled = true;
+            select2.disabled = true;
+            quincenalWrap.classList.add('d-none');
+            if(label) label.innerText = 'Dia de Pago';
+        }
         wrap.classList.remove('d-none');
+    }
+
+    function normalizarSeleccionQuincenal(origen = 1) {
+        const select1 = document.getElementById('diaPagoCreditoInput1');
+        const select2 = document.getElementById('diaPagoCreditoInput2');
+        if(!select1 || !select2 || select1.disabled || select2.disabled) return;
+        if(!select1.value || !select2.value || select1.value !== select2.value) return;
+
+        const opciones = Array.from(select1.options).map(op => op.value);
+        if(opciones.length < 2) return;
+
+        const fijo = origen === 2 ? select2 : select1;
+        const ajustar = origen === 2 ? select1 : select2;
+        const indiceActual = opciones.indexOf(fijo.value);
+        const candidatos = opciones.slice(indiceActual + 1).concat(opciones.slice(0, indiceActual));
+        const reemplazo = candidatos.find(valor => valor !== fijo.value);
+        if(reemplazo){
+            ajustar.value = reemplazo;
+        }
+    }
+
+    function obtenerDiasPagoCreditoSeleccionados() {
+        const period = document.getElementById('periodicidadCreditoInput')?.value || 'Mensual';
+        if(period === 'Quincenal'){
+            normalizarSeleccionQuincenal(2);
+            const valores = [
+                parseInt(document.getElementById('diaPagoCreditoInput1')?.value || '1', 10),
+                parseInt(document.getElementById('diaPagoCreditoInput2')?.value || '15', 10)
+            ].filter(v => !Number.isNaN(v));
+            return Array.from(new Set(valores)).sort((a, b) => a - b);
+        }
+        const unico = parseInt(document.getElementById('diaPagoCreditoInput')?.value || '0', 10);
+        return Number.isNaN(unico) ? [] : [unico];
     }
     function toggleReferenciasCredito() {
         const switchRef = document.getElementById('agregarReferenciasCreditoSwitch');
         const fieldsRef = document.getElementById('referenciasCreditoFields');
-        const secondRefFields = document.getElementById('segundaReferenciaCreditoFields');
         if(!switchRef || !fieldsRef) return;
         fieldsRef.classList.toggle('d-none', !switchRef.checked);
-        if(!switchRef.checked && secondRefFields){
-            secondRefFields.classList.add('d-none');
+        if(!switchRef.checked){
+            ocultarSegundaReferenciaCredito();
         }
     }
 
     function mostrarSegundaReferenciaCredito() {
         const secondRefFields = document.getElementById('segundaReferenciaCreditoFields');
+        const addBtn = document.getElementById('agregarSegundaReferenciaBtn');
+        const removeBtn = document.getElementById('quitarSegundaReferenciaBtn');
         if(!secondRefFields) return;
         secondRefFields.classList.remove('d-none');
+        secondRefFields.querySelectorAll('input').forEach(input => {
+            input.disabled = false;
+        });
+        if(addBtn) addBtn.classList.add('d-none');
+        if(removeBtn) removeBtn.classList.remove('d-none');
+    }
+
+    function ocultarSegundaReferenciaCredito() {
+        const secondRefFields = document.getElementById('segundaReferenciaCreditoFields');
+        const addBtn = document.getElementById('agregarSegundaReferenciaBtn');
+        const removeBtn = document.getElementById('quitarSegundaReferenciaBtn');
+        if(!secondRefFields) return;
+        secondRefFields.classList.add('d-none');
+        secondRefFields.querySelectorAll('input').forEach(input => {
+            input.value = '';
+            input.disabled = true;
+        });
+        if(addBtn) addBtn.classList.remove('d-none');
+        if(removeBtn) removeBtn.classList.add('d-none');
     }
 
     function actualizarBloquesCliente(requeridoCliente, esCredito){
@@ -987,7 +1070,8 @@
         const nCuotas = parseInt(document.getElementById('numeroCuotasInput')?.value||1)||1;
         const period = document.getElementById('periodicidadCreditoInput')?.value||'Mensual';
         const fechaStr = document.getElementById('fechaInicioCredito')?.value||'';
-        const diaPago = parseInt(document.getElementById('diaPagoCreditoInput')?.value || '0', 10);
+        const diasPago = obtenerDiasPagoCreditoSeleccionados();
+        const diaPago = diasPago.length ? diasPago[0] : 0;
 
         const saldo = Math.max(total - ci, 0);
         const pct = 0;
@@ -1021,11 +1105,19 @@
                     if(delta <= 0) delta = 7;
                     fecha.setDate(fecha.getDate() + delta);
                 } else if(period==='Quincenal'){
-                    var qd = isNaN(diaPago) ? 16 : diaPago;
-                    var y = fecha.getFullYear(), m = fecha.getMonth();
-                    var c1 = qd >= 16 ? crearFechaSegura(y, m, qd) : crearFechaSegura(y, m + 1, qd);
-                    if(c1 <= fecha) c1 = crearFechaSegura(c1.getFullYear(), c1.getMonth() + 1, qd);
-                    fecha = c1;
+                    var diasQuincenales = diasPago.filter(v => !Number.isNaN(v)).sort((a, b) => a - b);
+                    if(!diasQuincenales.length) diasQuincenales = [1, 15];
+                    if(diasQuincenales.length === 1) diasQuincenales.push(diasQuincenales[0] === 15 ? 30 : 15);
+                    var candidatos = [];
+                    for(var monthOffset = 0; monthOffset < 3; monthOffset++){
+                        var baseMonth = new Date(fecha.getFullYear(), fecha.getMonth() + monthOffset, 1, 12, 0, 0);
+                        diasQuincenales.forEach(function(diaSel){
+                            var candidato = crearFechaSegura(baseMonth.getFullYear(), baseMonth.getMonth(), diaSel);
+                            if(candidato > fecha) candidatos.push(candidato);
+                        });
+                    }
+                    candidatos.sort((a, b) => a - b);
+                    fecha = candidatos.length ? candidatos[0] : crearFechaSegura(fecha.getFullYear(), fecha.getMonth() + 1, diasQuincenales[0]);
                 } else {
                     var md = isNaN(diaPago) ? 1 : diaPago;
                     var y2 = fecha.getFullYear(), m2 = fecha.getMonth();

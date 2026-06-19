@@ -199,8 +199,8 @@ class Configuracion(db.Model):
     dias_gracia = db.Column(db.Integer, default=0)
     aplicar_interes_credito = db.Column(db.Boolean, default=True)
     dias_pago_semanal = db.Column(db.Text, default='[{"value":"1","label":"Lunes"},{"value":"2","label":"Martes"},{"value":"3","label":"Miercoles"},{"value":"4","label":"Jueves"},{"value":"5","label":"Viernes"},{"value":"6","label":"Sabado"},{"value":"0","label":"Domingo"}]')
-    dias_pago_quincenal = db.Column(db.Text, default='[{"value":"16","label":"Dia 16"},{"value":"17","label":"Dia 17"},{"value":"18","label":"Dia 18"},{"value":"19","label":"Dia 19"},{"value":"20","label":"Dia 20"},{"value":"1","label":"Dia 1"},{"value":"2","label":"Dia 2"},{"value":"3","label":"Dia 3"},{"value":"4","label":"Dia 4"},{"value":"5","label":"Dia 5"}]')
-    dias_pago_mensual = db.Column(db.Text, default='[{"value":"1","label":"Dia 1"},{"value":"2","label":"Dia 2"},{"value":"3","label":"Dia 3"},{"value":"4","label":"Dia 4"},{"value":"5","label":"Dia 5"},{"value":"6","label":"Dia 6"},{"value":"7","label":"Dia 7"},{"value":"8","label":"Dia 8"},{"value":"9","label":"Dia 9"},{"value":"10","label":"Dia 10"}]')
+    dias_pago_quincenal = db.Column(db.Text, default=lambda: json.dumps([{"value": str(i), "label": f"Dia {i}"} for i in range(1, 32)], ensure_ascii=False))
+    dias_pago_mensual = db.Column(db.Text, default=lambda: json.dumps([{"value": str(i), "label": f"Dia {i}"} for i in range(1, 31)], ensure_ascii=False))
 
 class Sede(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -472,19 +472,10 @@ def opciones_dia_pago_default():
             {"value": "0", "label": "Domingo"},
         ],
         "Quincenal": [
-            {"value": "16", "label": "Dia 16"},
-            {"value": "17", "label": "Dia 17"},
-            {"value": "18", "label": "Dia 18"},
-            {"value": "19", "label": "Dia 19"},
-            {"value": "20", "label": "Dia 20"},
-            {"value": "1", "label": "Dia 1"},
-            {"value": "2", "label": "Dia 2"},
-            {"value": "3", "label": "Dia 3"},
-            {"value": "4", "label": "Dia 4"},
-            {"value": "5", "label": "Dia 5"},
+            {"value": str(i), "label": f"Dia {i}"} for i in range(1, 32)
         ],
         "Mensual": [
-            {"value": str(i), "label": f"Dia {i}"} for i in range(1, 11)
+            {"value": str(i), "label": f"Dia {i}"} for i in range(1, 31)
         ],
     }
 
@@ -514,10 +505,20 @@ def deserializar_opciones_dia_pago(raw, fallback):
 
 def opciones_dia_pago_desde_config(conf):
     defaults = opciones_dia_pago_default()
+    quincenal = deserializar_opciones_dia_pago(getattr(conf, "dias_pago_quincenal", None), defaults["Quincenal"])
+    mensual = deserializar_opciones_dia_pago(getattr(conf, "dias_pago_mensual", None), defaults["Mensual"])
+
+    quincenal_values = {str(it.get("value", "")).strip() for it in quincenal}
+    mensual_values = {str(it.get("value", "")).strip() for it in mensual}
+    if len(quincenal_values) < 31:
+        quincenal = defaults["Quincenal"]
+    if len(mensual_values) < 30:
+        mensual = defaults["Mensual"]
+
     return {
         "Semanal": deserializar_opciones_dia_pago(getattr(conf, "dias_pago_semanal", None), defaults["Semanal"]),
-        "Quincenal": deserializar_opciones_dia_pago(getattr(conf, "dias_pago_quincenal", None), defaults["Quincenal"]),
-        "Mensual": deserializar_opciones_dia_pago(getattr(conf, "dias_pago_mensual", None), defaults["Mensual"]),
+        "Quincenal": quincenal,
+        "Mensual": mensual,
     }
 
 def parsear_opciones_desde_texto(periodicidad, texto):
@@ -540,7 +541,7 @@ def parsear_opciones_desde_texto(periodicidad, texto):
             opts.append({"value": str(vi), "label": lbl})
         elif periodicidad == "Quincenal" and 1 <= vi <= 31:
             opts.append({"value": str(vi), "label": lbl})
-        elif periodicidad == "Mensual" and 1 <= vi <= 28:
+        elif periodicidad == "Mensual" and 1 <= vi <= 30:
             opts.append({"value": str(vi), "label": lbl})
     return opts
 
@@ -767,15 +768,37 @@ def generar_plan_pagos(credito, fecha_inicio, dia_pago=None):
         dia = max(1, min(int(day_value), ultimo))
         return base_date.replace(day=dia)
 
+    def normalizar_dias_quincenales(raw_value):
+        dias = []
+        origen = raw_value if isinstance(raw_value, (list, tuple, set)) else [raw_value]
+        for item in origen:
+            if isinstance(item, str) and ',' in item:
+                partes = item.split(',')
+            else:
+                partes = [item]
+            for parte in partes:
+                try:
+                    vi = int(str(parte).strip())
+                except (TypeError, ValueError):
+                    continue
+                if 1 <= vi <= 31 and vi not in dias:
+                    dias.append(vi)
+        dias = sorted(dias)
+        if not dias:
+            dias = [1, 15]
+        if len(dias) == 1:
+            sugerido = 15 if dias[0] != 15 else 30
+            if sugerido not in dias:
+                dias.append(sugerido)
+        return sorted(dias[:2])
+
     try:
-        dia_pago = int(dia_pago) if dia_pago is not None and str(dia_pago).strip() != "" else None
+        dia_pago = int(dia_pago) if dia_pago is not None and not isinstance(dia_pago, (list, tuple, set)) and str(dia_pago).strip() != "" else dia_pago
     except (TypeError, ValueError):
         dia_pago = None
 
     for i in range(1, n_cuotas + 1):
         if periodicidad == "Semanal":
-            # Entrada UI: 0=Domingo, 1=Lunes, ..., 6=Sabado.
-            # Python weekday: 0=Lunes, ..., 6=Domingo.
             if dia_pago is None or dia_pago < 0 or dia_pago > 6:
                 dia_pago = 1
             weekday_target = (dia_pago - 1) % 7
@@ -784,19 +807,17 @@ def generar_plan_pagos(credito, fecha_inicio, dia_pago=None):
                 delta = 7
             fecha = fecha + timedelta(days=delta)
         elif periodicidad == "Quincenal":
-            if dia_pago is None or dia_pago < 1 or dia_pago > 31:
-                dia_pago = 16
-            if dia_pago >= 16:
-                candidato = con_dia_seguro(fecha, dia_pago)
-                if candidato <= fecha:
-                    candidato = con_dia_seguro(add_months(candidato, 1), dia_pago)
-            else:
-                candidato = con_dia_seguro(add_months(fecha.replace(day=1), 1), dia_pago)
-                if candidato <= fecha:
-                    candidato = con_dia_seguro(add_months(candidato, 1), dia_pago)
-            fecha = candidato
+            dias_quincenales = normalizar_dias_quincenales(dia_pago)
+            candidatos = []
+            for month_offset in range(0, 3):
+                base_month = add_months(fecha.replace(day=1), month_offset)
+                for dia in dias_quincenales:
+                    candidato = con_dia_seguro(base_month, dia)
+                    if candidato > fecha:
+                        candidatos.append(candidato)
+            fecha = min(candidatos) if candidatos else con_dia_seguro(add_months(fecha.replace(day=1), 1), dias_quincenales[0])
         else:  # Mensual
-            if dia_pago is None or dia_pago < 1 or dia_pago > 31:
+            if dia_pago is None or dia_pago < 1 or dia_pago > 30:
                 dia_pago = 1
             candidato = con_dia_seguro(fecha, dia_pago)
             if candidato <= fecha:
@@ -2013,7 +2034,6 @@ def cerrar_cuenta():
             periodicidad_credito = (request.form.get("periodicidad_credito") or "Mensual").title()
             if periodicidad_credito not in ["Semanal", "Quincenal", "Mensual"]:
                 periodicidad_credito = "Mensual"
-            dia_pago_credito = parse_non_negative_int(request.form.get("dia_pago_credito"))
             conf_dias = Configuracion.query.first() or Configuracion()
             opts_map = opciones_dia_pago_desde_config(conf_dias)
             opts_periodo = opts_map.get(periodicidad_credito, [])
@@ -2033,10 +2053,37 @@ def cerrar_cuenta():
             if not pares_validos:
                 pares_validos = [(1, "Dia 1")]
             valores_validos = {v for v, _ in pares_validos}
-            if dia_pago_credito not in valores_validos:
-                dia_pago_credito = pares_validos[0][0]
             etiqueta_map = {v: l for v, l in pares_validos}
-            dia_pago_texto = etiqueta_map.get(dia_pago_credito, f"Dia {dia_pago_credito}")
+
+            if periodicidad_credito == "Quincenal":
+                dia_pago_credito_1 = parse_non_negative_int(request.form.get("dia_pago_credito_1"))
+                dia_pago_credito_2 = parse_non_negative_int(request.form.get("dia_pago_credito_2"))
+                dias_quincenales = []
+                for candidato in [dia_pago_credito_1, dia_pago_credito_2]:
+                    if candidato in valores_validos and candidato not in dias_quincenales:
+                        dias_quincenales.append(candidato)
+                if len(dias_quincenales) == 1:
+                    unico = dias_quincenales[0]
+                    ordenados = sorted(valores_validos)
+                    indice = ordenados.index(unico) if unico in ordenados else -1
+                    candidatos_extra = ordenados[indice + 1:] + ordenados[:indice]
+                    for candidato_extra in candidatos_extra:
+                        if candidato_extra != unico:
+                            dias_quincenales.append(candidato_extra)
+                            break
+                for valor_defecto, _ in pares_validos:
+                    if len(dias_quincenales) >= 2:
+                        break
+                    if valor_defecto not in dias_quincenales:
+                        dias_quincenales.append(valor_defecto)
+                dias_quincenales = sorted(dias_quincenales[:2])
+                dia_pago_credito = dias_quincenales
+                dia_pago_texto = " y ".join(etiqueta_map.get(dia, f"Dia {dia}") for dia in dias_quincenales)
+            else:
+                dia_pago_credito = parse_non_negative_int(request.form.get("dia_pago_credito"))
+                if dia_pago_credito not in valores_validos:
+                    dia_pago_credito = pares_validos[0][0]
+                dia_pago_texto = etiqueta_map.get(dia_pago_credito, f"Dia {dia_pago_credito}")
             numero_cuotas = parse_non_negative_int(request.form.get("numero_cuotas")) or 1
             numero_cuotas = max(1, min(numero_cuotas, 120))
             cliente_credito_ref = db.session.get(Cliente, v.cliente_id)
