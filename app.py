@@ -2073,16 +2073,22 @@ def cerrar_cuenta():
             referencias_struct = []
             agregar_referencias_credito = (request.form.get("agregar_referencias_credito") or "").strip() in {"1", "true", "on", "yes"}
             if agregar_referencias_credito:
-                for idx in (1, 2):
+                referencias_requeridas = [1]
+                ref2_tiene_datos = any((request.form.get(campo) or "").strip() for campo in ("ref2_nombre", "ref2_parentesco", "ref2_celular", "ref2_direccion"))
+                if ref2_tiene_datos:
+                    referencias_requeridas.append(2)
+
+                for idx in referencias_requeridas:
                     ref_nombre = (request.form.get(f"ref{idx}_nombre") or "").strip()
                     ref_parentesco = (request.form.get(f"ref{idx}_parentesco") or "").strip()
                     ref_celular = (request.form.get(f"ref{idx}_celular") or "").strip()
                     ref_direccion = (request.form.get(f"ref{idx}_direccion") or "").strip()
                     cel_norm = normalizar_telefono(ref_celular)
                     if not ref_nombre or len(cel_norm) < 7:
+                        etiqueta = "la referencia 1" if idx == 1 else f"la referencia {idx}"
                         return fail_checkout(
                             "referencias_incompletas",
-                            "Si activas referencias, debes registrar 2 referencias con nombre y celular valido.",
+                            f"Si activas referencias, debes completar {etiqueta} con nombre y celular valido.",
                             "warning"
                         )
                     referencias_struct.append({

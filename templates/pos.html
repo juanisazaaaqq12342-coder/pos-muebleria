@@ -504,18 +504,23 @@
                 </div>
                 <div id="referenciasCreditoFields" class="d-none">
                   <div class="small text-muted mb-2">Referencia 1</div>
-                  <div class="row g-2 mb-2">
+                  <div class="row g-2 mb-3">
                     <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref1_nombre" placeholder="Nombre"></div>
                     <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref1_parentesco" placeholder="Parentesco"></div>
                     <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref1_celular" placeholder="Celular"></div>
-                    <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref1_direccion" placeholder="Direcci?n"></div>
+                    <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref1_direccion" placeholder="Direccion"></div>
                   </div>
-                  <div class="small text-muted mb-2">Referencia 2</div>
-                  <div class="row g-2">
+                  <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                    <div class="small text-muted m-0">Referencia 2</div>
+                    <button type="button" id="agregarSegundaReferenciaBtn" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="mostrarSegundaReferenciaCredito()">
+                      <i class="bi bi-plus-circle me-1"></i>Agregar segunda referencia
+                    </button>
+                  </div>
+                  <div id="segundaReferenciaCreditoFields" class="row g-2 d-none">
                     <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref2_nombre" placeholder="Nombre"></div>
                     <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref2_parentesco" placeholder="Parentesco"></div>
                     <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref2_celular" placeholder="Celular"></div>
-                    <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref2_direccion" placeholder="Direcci?n"></div>
+                    <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref2_direccion" placeholder="Direccion"></div>
                   </div>
                 </div>
               </div>
@@ -842,8 +847,18 @@
     function toggleReferenciasCredito() {
         const switchRef = document.getElementById('agregarReferenciasCreditoSwitch');
         const fieldsRef = document.getElementById('referenciasCreditoFields');
+        const secondRefFields = document.getElementById('segundaReferenciaCreditoFields');
         if(!switchRef || !fieldsRef) return;
         fieldsRef.classList.toggle('d-none', !switchRef.checked);
+        if(!switchRef.checked && secondRefFields){
+            secondRefFields.classList.add('d-none');
+        }
+    }
+
+    function mostrarSegundaReferenciaCredito() {
+        const secondRefFields = document.getElementById('segundaReferenciaCreditoFields');
+        if(!secondRefFields) return;
+        secondRefFields.classList.remove('d-none');
     }
 
     function actualizarBloquesCliente(requeridoCliente, esCredito){
