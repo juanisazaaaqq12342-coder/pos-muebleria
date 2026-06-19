@@ -106,14 +106,13 @@
     }
 
     .logo-login-muebleria {
-      width: 56px;
-      height: 56px;
-      background: rgba(255, 255, 255, 0.92);
-      border: 1px solid rgba(0, 43, 115, 0.2);
-      border-radius: 14px;
-      padding: 8px;
+      width: 86px;
+      height: 86px;
+      border-radius: 22px;
+      object-fit: contain;
       display: inline-block;
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.9rem;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.18);
     }
   </style>
 </head>
@@ -122,7 +121,7 @@
   <div class="login-container">
     <div class="login-card animate-slide-in">
       <div class="text-center mb-5">
-        <img src="{{ url_for('static', filename='img/logo_muebleria.svg') }}" alt="Logo Muebleria La Mejor" class="logo-login-muebleria">
+        <img src="{{ url_for('static', filename=brand_logo_static) }}" alt="Logo JL Muebleria" class="logo-login-muebleria">
         <div class="brand-accent">{{ configuracion.nombre_empresa }}</div>
         <div class="text-white-50 small text-uppercase tracking-widest fw-bold">Gestión de Inventario y Ventas</div>
       </div>

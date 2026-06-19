@@ -126,20 +126,22 @@ small {
 }
 
 .topnav .brand-icon-wrapper {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.92);
-    border: 1px solid rgba(0, 43, 115, 0.25);
+    background: transparent;
+    border: none;
 }
 
 .topnav .brand-logo-muebleria {
-    width: 24px;
-    height: 24px;
+    width: 40px;
+    height: 40px;
     display: block;
+    object-fit: contain;
+    border-radius: 12px;
 }
 
 .topnav-link {

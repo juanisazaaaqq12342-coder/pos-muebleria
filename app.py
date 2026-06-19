@@ -78,6 +78,9 @@ app = Flask(__name__,
             static_folder=os.path.join(base_dir, 'static'), 
             template_folder=os.path.join(base_dir, 'templates'))
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "cambia_esta_clave_en_produccion")
+BRAND_LOGO_STATIC = 'img/logo_muebleria.jpg'
+BRAND_LOGO_PATH = os.path.join(app.static_folder, 'img', 'logo_muebleria.jpg')
+app.jinja_env.globals['brand_logo_static'] = BRAND_LOGO_STATIC
 
 # DB CONFIG
 instance_path = os.path.join(base_dir, "instance")
@@ -3700,7 +3703,14 @@ def safe_text(text):
     return str(text).encode('latin-1', 'replace').decode('latin-1')
 
 def draw_muebleria_logo_pdf(pdf, x, y, size=18):
-    """Dibuja el logo de la muebleria en trazos vectoriales para PDF."""
+    """Renderiza el logo principal en PDF y deja un respaldo vectorial si falla la imagen."""
+    if os.path.exists(BRAND_LOGO_PATH):
+        try:
+            pdf.image(BRAND_LOGO_PATH, x=x, y=y, w=size, h=size)
+            return
+        except Exception:
+            pass
+
     segmentos = [
         (45, 60, 45, 225),
         (72, 60, 72, 215),
