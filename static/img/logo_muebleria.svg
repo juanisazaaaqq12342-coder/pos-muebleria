@@ -1,24 +1,4 @@
-<svg
-  width="300"
-  height="300"
-  viewBox="0 0 300 300"
-  xmlns="http://www.w3.org/2000/svg"
-  aria-label="Logo Muebleria La Mejor"
->
-  <g
-    fill="none"
-    stroke="#002b73"
-    stroke-width="15"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-  >
-    <path d="M45 60 L45 225" />
-    <path d="M72 60 L72 215" />
-    <path d="M45 225 L175 225" />
-    <path d="M105 95 L105 195" />
-    <path d="M105 95 L205 195" />
-    <path d="M95 60 L210 175" />
-    <path d="M210 175 L260 65" />
-    <path d="M260 65 L260 225" />
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" aria-label="Logo JL Muebleria">
+  <rect width="512" height="512" rx="56" fill="#f2e4d2" />
+  <image href="logo_muebleria.jpg" x="24" y="24" width="464" height="464" preserveAspectRatio="xMidYMid meet" />
 </svg>

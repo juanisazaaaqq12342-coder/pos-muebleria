@@ -79,8 +79,10 @@ app = Flask(__name__,
             template_folder=os.path.join(base_dir, 'templates'))
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "cambia_esta_clave_en_produccion")
 BRAND_LOGO_STATIC = 'img/logo_muebleria.jpg'
+BRAND_LOGO_VERSION = '20260619'
 BRAND_LOGO_PATH = os.path.join(app.static_folder, 'img', 'logo_muebleria.jpg')
 app.jinja_env.globals['brand_logo_static'] = BRAND_LOGO_STATIC
+app.jinja_env.globals['brand_logo_version'] = BRAND_LOGO_VERSION
 
 # DB CONFIG
 instance_path = os.path.join(base_dir, "instance")
