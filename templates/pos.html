@@ -492,20 +492,31 @@
               </div>
               <div id="referenciasCreditoBlock">
               <div class="border rounded-4 p-3 bg-light mb-3">
-                <div class="small fw-bold text-muted text-uppercase mb-2">Referencias Personales</div>
-                <div class="small text-muted mb-2">Referencia 1</div>
-                <div class="row g-2 mb-2">
-                  <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref1_nombre" placeholder="Nombre"></div>
-                  <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref1_parentesco" placeholder="Parentesco"></div>
-                  <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref1_celular" placeholder="Celular"></div>
-                  <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref1_direccion" placeholder="Dirección"></div>
+                <div class="d-flex justify-content-between align-items-center gap-3 mb-2">
+                  <div>
+                    <div class="small fw-bold text-muted text-uppercase mb-1">Referencias Personales</div>
+                    <div class="small text-muted">Opcional. Activalo solo si el cliente tiene referencias.</div>
+                  </div>
+                  <div class="form-check form-switch m-0">
+                    <input class="form-check-input" type="checkbox" role="switch" id="agregarReferenciasCreditoSwitch" name="agregar_referencias_credito" value="1" onchange="toggleReferenciasCredito()">
+                    <label class="form-check-label small fw-bold text-muted" for="agregarReferenciasCreditoSwitch">Agregar referencias</label>
+                  </div>
                 </div>
-                <div class="small text-muted mb-2">Referencia 2</div>
-                <div class="row g-2">
-                  <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref2_nombre" placeholder="Nombre"></div>
-                  <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref2_parentesco" placeholder="Parentesco"></div>
-                  <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref2_celular" placeholder="Celular"></div>
-                  <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref2_direccion" placeholder="Dirección"></div>
+                <div id="referenciasCreditoFields" class="d-none">
+                  <div class="small text-muted mb-2">Referencia 1</div>
+                  <div class="row g-2 mb-2">
+                    <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref1_nombre" placeholder="Nombre"></div>
+                    <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref1_parentesco" placeholder="Parentesco"></div>
+                    <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref1_celular" placeholder="Celular"></div>
+                    <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref1_direccion" placeholder="Direcci?n"></div>
+                  </div>
+                  <div class="small text-muted mb-2">Referencia 2</div>
+                  <div class="row g-2">
+                    <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref2_nombre" placeholder="Nombre"></div>
+                    <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref2_parentesco" placeholder="Parentesco"></div>
+                    <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref2_celular" placeholder="Celular"></div>
+                    <div class="col-6"><input type="text" class="form-control form-control-sm" name="ref2_direccion" placeholder="Direcci?n"></div>
+                  </div>
                 </div>
               </div>
               </div>
@@ -828,6 +839,12 @@
         if(!select.value && opciones.length) select.value = String(opciones[0].value);
         wrap.classList.remove('d-none');
     }
+    function toggleReferenciasCredito() {
+        const switchRef = document.getElementById('agregarReferenciasCreditoSwitch');
+        const fieldsRef = document.getElementById('referenciasCreditoFields');
+        if(!switchRef || !fieldsRef) return;
+        fieldsRef.classList.toggle('d-none', !switchRef.checked);
+    }
 
     function actualizarBloquesCliente(requeridoCliente, esCredito){
         const creditoBlock = document.getElementById('creditoPlanBlock');
@@ -844,8 +861,11 @@
         referenciasBlock.classList.toggle('d-none', !esCredito);
         condicionesBlock.classList.toggle('d-none', !esCredito);
         if(titulo) titulo.innerHTML = esCredito
-            ? '<i class="bi bi-calculator me-2 text-primary"></i>Datos del Crédito'
-            : '<i class="bi bi-person-vcard me-2 text-primary"></i>Información del Cliente';
+            ? '<i class="bi bi-calculator me-2 text-primary"></i>Datos del Cr?dito'
+            : '<i class="bi bi-person-vcard me-2 text-primary"></i>Informaci?n del Cliente';
+        if(esCredito){
+            toggleReferenciasCredito();
+        }
 
         // La validacion final se hace en backend para permitir cliente existente o nuevo sin bloquear UX.
     }
