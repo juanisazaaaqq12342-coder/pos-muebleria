@@ -2914,6 +2914,107 @@ def nuevo_cliente():
             
     return redirect(request.referrer)
 
+@app.route("/crear_credito_manual", methods=["POST"])
+@admin_required
+def crear_credito_manual():
+    cliente_id = parse_non_negative_int(request.form.get("cliente_id_credito_manual"))
+    return_to = (request.form.get("return_to") or "").strip()
+    if not return_to.startswith("/"):
+        return_to = ""
+    cliente = db.session.get(Cliente, cliente_id) if cliente_id else None
+    if not cliente:
+        flash("Cliente no valido para crear credito.", "warning")
+        return redirect(return_to or url_for("clientes"))
+    try:
+        credito_activo = obtener_credito_activo_cliente(cliente.id)
+        estado_activo = (credito_activo.estado or "").lower() if credito_activo else ""
+        if credito_activo and int(credito_activo.saldo_actual or 0) > 0 and estado_activo not in {"pagado", "cancelado"}:
+            flash(f"El cliente ya tiene un credito activo ({credito_activo.codigo}).", "warning")
+            return redirect(return_to or url_for("cliente_historial", cliente_id=cliente.id))
+        monto_total = parse_non_negative_int(request.form.get("monto_total_credito"))
+        cuota_inicial = parse_non_negative_int(request.form.get("cuota_inicial_credito") or 0) or 0
+        numero_cuotas = parse_non_negative_int(request.form.get("numero_cuotas_credito")) or 1
+        numero_cuotas = max(1, min(numero_cuotas, 120))
+        periodicidad_credito = (request.form.get("periodicidad_credito") or "Mensual").title()
+        if periodicidad_credito not in ["Semanal", "Quincenal", "Mensual"]:
+            periodicidad_credito = "Mensual"
+        if monto_total is None or monto_total <= 0:
+            flash("Debes ingresar un monto total valido para el credito.", "warning")
+            return redirect(return_to or url_for("cliente_historial", cliente_id=cliente.id))
+        if cuota_inicial < 0 or cuota_inicial >= monto_total:
+            flash("La cuota inicial debe ser menor al monto total del credito.", "warning")
+            return redirect(return_to or url_for("cliente_historial", cliente_id=cliente.id))
+        saldo_financiar = max(int(monto_total) - int(cuota_inicial), 0)
+        if saldo_financiar <= 0:
+            flash("El credito debe dejar saldo pendiente para entrar a cartera.", "warning")
+            return redirect(return_to or url_for("cliente_historial", cliente_id=cliente.id))
+        conf = Configuracion.query.first() or Configuracion()
+        opts_map = opciones_dia_pago_desde_config(conf)
+        pares_validos = []
+        for op in opts_map.get(periodicidad_credito, []):
+            try:
+                pares_validos.append((int(str(op.get("value"))), str(op.get("label") or op.get("value"))))
+            except Exception:
+                pass
+        if not pares_validos:
+            pares_validos = [(1, "Dia 1")]
+        valores_validos = {v for v, _ in pares_validos}
+        etiqueta_map = {v: l for v, l in pares_validos}
+        if periodicidad_credito == "Quincenal":
+            dias = []
+            for candidato in [parse_non_negative_int(request.form.get("dia_pago_credito_1")), parse_non_negative_int(request.form.get("dia_pago_credito_2"))]:
+                if candidato in valores_validos and candidato not in dias:
+                    dias.append(candidato)
+            for valor_defecto, _ in pares_validos:
+                if len(dias) >= 2:
+                    break
+                if valor_defecto not in dias:
+                    dias.append(valor_defecto)
+            dias = sorted(dias[:2])
+            dia_pago_credito = dias
+            dia_pago_texto = " y ".join(etiqueta_map.get(d, f"Dia {d}") for d in dias)
+        else:
+            dia_pago_credito = parse_non_negative_int(request.form.get("dia_pago_credito"))
+            if dia_pago_credito not in valores_validos:
+                dia_pago_credito = pares_validos[0][0]
+            dia_pago_texto = etiqueta_map.get(dia_pago_credito, f"Dia {dia_pago_credito}")
+        fecha_inicio_str = (request.form.get("fecha_inicio_credito", "") or "").strip()
+        try:
+            fecha_inicio_pago = datetime.strptime(fecha_inicio_str, "%Y-%m-%d")
+        except Exception:
+            fecha_inicio_pago = datetime.now()
+        descripcion_credito = (request.form.get("descripcion_credito") or "").strip()
+        observaciones_extra = (request.form.get("observaciones_credito") or "").strip()
+        valor_cuota_calc = int(math.ceil(saldo_financiar / numero_cuotas)) if numero_cuotas > 0 else saldo_financiar
+        nota_credito_manual = descripcion_credito or "Credito manual"
+        venta_manual = Venta(fecha_creacion=fecha_inicio_pago, sede_id=session.get("sede_id"), cliente_id=cliente.id, vendedor_id=session.get("user_id"), estado="credito", estado_entrega="Pendiente", direccion_envio=cliente.direccion, cerrado=True, fecha_cierre=fecha_inicio_pago, metodo_pago="Credito", pago_efectivo=int(cuota_inicial), pago_tarjeta=0, pago_transferencia=0, total=int(monto_total), monto_recibido=int(cuota_inicial), cambio=0, notas=f"{nota_credito_manual} | Credito manual creado desde clientes")
+        db.session.add(venta_manual)
+        db.session.flush()
+        cliente.deuda = (cliente.deuda or 0) + int(saldo_financiar)
+        db.session.add(MovimientoCredito(cliente_id=cliente.id, tipo='cargo', monto=int(saldo_financiar), nota=f"{nota_credito_manual} | Venta manual #{venta_manual.id} | CI ${cuota_inicial:,.0f}", usuario_id=session.get("user_id")))
+        encabezado_dia = f"Dia de pago ({periodicidad_credito}): {dia_pago_texto}"
+        observaciones = [encabezado_dia]
+        if descripcion_credito:
+            observaciones.append(f"Concepto: {descripcion_credito}")
+        if observaciones_extra:
+            observaciones.append(observaciones_extra)
+        observaciones.append(f"Credito manual generado desde clientes para {nombre_completo_cliente(cliente)}")
+        nuevo_credito = Credito(codigo=generar_codigo_credito(), fecha_inicio=fecha_inicio_pago, cliente_id=cliente.id, venta_id=venta_manual.id, periodicidad=periodicidad_credito, numero_cuotas=numero_cuotas, monto_total=int(monto_total), cuota_inicial=int(cuota_inicial), saldo_financiar=int(saldo_financiar), porcentaje_interes=0.0, valor_interes=0, total_financiado=int(saldo_financiar), valor_cuota=int(valor_cuota_calc), saldo_actual=int(saldo_financiar), estado="Activo", observaciones="\n".join(observaciones)[:300])
+        db.session.add(nuevo_credito)
+        db.session.flush()
+        generar_plan_pagos(nuevo_credito, fecha_inicio_pago, dia_pago_credito)
+        sincronizar_cartera_cliente(cliente.id)
+        db.session.commit()
+        try:
+            registrar_auditoria("Credito Manual", f"Cliente {cliente.id} | Credito {nuevo_credito.codigo} | Total ${monto_total:,.0f}")
+        except Exception:
+            pass
+        flash(f"Credito manual {nuevo_credito.codigo} creado correctamente para {nombre_completo_cliente(cliente)}.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"No fue posible crear el credito manual: {e}", "danger")
+    return redirect(return_to or url_for("cliente_historial", cliente_id=cliente.id))
+
 @app.route("/eliminar_cliente/<int:cliente_id>", methods=["POST"])
 @admin_required
 def eliminar_cliente(cliente_id):

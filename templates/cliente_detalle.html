@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 
 {% block content %}
 <div class="animate-slide-in">
@@ -13,7 +13,10 @@
       <h2 class="fw-bold m-0 text-dark" style="font-family: 'Playfair Display', serif;">Historial de Cliente</h2>
       <p class="text-muted small m-0 text-uppercase tracking-widest">Ficha completa de compras, cartera y pagos</p>
     </div>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-wrap">
+      <button type="button" class="btn btn-warning fw-bold rounded-pill px-3" onclick='prepararModalCreditoManual({{ cliente.id }}, {{ nombre_completo|tojson }}, {{ request.path|tojson }})'>
+        <i class="bi bi-journal-plus me-1"></i>Crear Credito
+      </button>
       {% if telefono_ok %}
       <a href="https://wa.me/{{ telefono_whatsapp }}?text={{ wa_msg_general|urlencode }}"
          target="_blank" class="btn btn-success fw-bold rounded-pill px-3">
@@ -365,5 +368,42 @@
     </div>
   </div>
 </div>
-{% endblock %}
 
+<div class="modal fade" id="modalCreditoManual" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content glass-panel border-0 shadow-xl overflow-hidden">
+      <div class="modal-header bg-dark text-white p-4">
+        <h5 class="modal-title fw-bold"><i class="bi bi-journal-plus text-accent me-2"></i>Crear Credito Manual</h5>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <form action="{{ url_for('crear_credito_manual') }}" method="POST" id="manualCreditoForm">
+          <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+          <input type="hidden" name="cliente_id_credito_manual" id="manualCreditoClienteId" value="{{ cliente.id }}">
+          <input type="hidden" name="return_to" id="manualCreditoReturnTo" value="{{ request.path }}">
+          <input type="hidden" name="fecha_inicio_credito" id="manualCreditoFechaInicio">
+          <div class="rounded-4 bg-light border p-3 mb-4"><div class="small text-muted text-uppercase fw-bold">Cliente</div><div class="fw-bold fs-5 text-dark" id="manualCreditoClienteNombre">{{ nombre_completo }}</div><div class="small text-muted">El plan de pagos futuro se genera automaticamente al guardar.</div></div>
+          <div class="row g-3">
+            <div class="col-md-8"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Concepto</label><input type="text" name="descripcion_credito" class="form-control" placeholder="Ej: Sala, colchon, refinanciacion"></div>
+            <div class="col-md-4"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Monto Total</label><input type="number" name="monto_total_credito" class="form-control fw-bold" min="1" required></div>
+            <div class="col-md-4"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Cuota Inicial</label><input type="number" name="cuota_inicial_credito" class="form-control fw-bold" min="0" value="0" required></div>
+            <div class="col-md-4"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Frecuencia</label><select name="periodicidad_credito" id="manualCreditoPeriodicidad" class="form-select" onchange="actualizarOpcionesDiaPagoManualCredito()"><option value="Semanal">Semanal</option><option value="Quincenal">Quincenal</option><option value="Mensual" selected>Mensual</option></select></div>
+            <div class="col-md-4"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">N de Cuotas</label><input type="number" name="numero_cuotas_credito" class="form-control fw-bold" min="1" max="120" value="12" required></div>
+          </div>
+          <div class="mt-3 d-none" id="manualCreditoDiaPagoWrap"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider" id="manualCreditoDiaPagoLabel">Dia de Pago</label><select name="dia_pago_credito" id="manualCreditoDiaPago" class="form-select"></select><div class="row g-2 mt-2 d-none" id="manualCreditoDiaPagoQuincenalWrap"><div class="col-md-6"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Primer dia</label><select name="dia_pago_credito_1" id="manualCreditoDiaPago1" class="form-select" onchange="normalizarSeleccionQuincenalManual(1)"></select></div><div class="col-md-6"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Segundo dia</label><select name="dia_pago_credito_2" id="manualCreditoDiaPago2" class="form-select" onchange="normalizarSeleccionQuincenalManual(2)"></select></div><div class="col-12"><div class="small text-muted">Escoge dos dias libres para los pagos quincenales.</div></div></div></div>
+          <div class="mt-3"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Observaciones</label><textarea name="observaciones_credito" rows="3" class="form-control" placeholder="Notas del credito"></textarea></div>
+          <div class="d-flex justify-content-end gap-2 mt-4"><button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-warning fw-bold rounded-pill px-4 shadow-sm">Guardar Credito</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  const opcionesDiaPagoManualFallback = { Semanal: [{ value: '1', label: 'Lunes' }, { value: '2', label: 'Martes' }, { value: '3', label: 'Miercoles' }, { value: '4', label: 'Jueves' }, { value: '5', label: 'Viernes' }, { value: '6', label: 'Sabado' }, { value: '0', label: 'Domingo' }], Quincenal: Array.from({ length: 31 }, (_, i) => ({ value: String(i + 1), label: `Dia ${i + 1}` })), Mensual: Array.from({ length: 30 }, (_, i) => ({ value: String(i + 1), label: `Dia ${i + 1}` })) };
+  let opcionesDiaPagoManual = JSON.parse(JSON.stringify(opcionesDiaPagoManualFallback));
+  function normalizarSeleccionQuincenalManual(origen = 1) { const select1 = document.getElementById('manualCreditoDiaPago1'); const select2 = document.getElementById('manualCreditoDiaPago2'); if (!select1 || !select2 || select1.disabled || select2.disabled || !select1.value || !select2.value || select1.value !== select2.value) return; const opciones = Array.from(select1.options).map(op => op.value); if (opciones.length < 2) return; const fijo = origen === 2 ? select2 : select1; const ajustar = origen === 2 ? select1 : select2; const indiceActual = opciones.indexOf(fijo.value); const candidatos = opciones.slice(indiceActual + 1).concat(opciones.slice(0, indiceActual)); const reemplazo = candidatos.find(valor => valor !== fijo.value); if (reemplazo) ajustar.value = reemplazo; }
+  function actualizarOpcionesDiaPagoManualCredito() { const period = document.getElementById('manualCreditoPeriodicidad')?.value || 'Mensual'; const wrap = document.getElementById('manualCreditoDiaPagoWrap'); const label = document.getElementById('manualCreditoDiaPagoLabel'); const select = document.getElementById('manualCreditoDiaPago'); const quincenalWrap = document.getElementById('manualCreditoDiaPagoQuincenalWrap'); const select1 = document.getElementById('manualCreditoDiaPago1'); const select2 = document.getElementById('manualCreditoDiaPago2'); if (!wrap || !select || !quincenalWrap || !select1 || !select2) return; const opciones = (opcionesDiaPagoManual && opcionesDiaPagoManual[period] && opcionesDiaPagoManual[period].length) ? opcionesDiaPagoManual[period] : opcionesDiaPagoManualFallback[period]; const html = opciones.map(op => `<option value="${op.value}">${op.label}</option>`).join(''); if (period === 'Quincenal') { const previo1 = select1.value || '1'; const previo2 = select2.value || '15'; select.innerHTML = ''; select.disabled = true; select.classList.add('d-none'); select1.disabled = false; select2.disabled = false; select1.innerHTML = html; select2.innerHTML = html; if (opciones.some(op => op.value === previo1)) select1.value = previo1; if (!select1.value && opciones.length) select1.value = String(opciones[0].value); if (opciones.some(op => op.value === previo2)) select2.value = previo2; if (!select2.value && opciones.length) select2.value = String(opciones[Math.min(14, opciones.length - 1)].value); if (select1.value === select2.value && opciones.length > 1) { const alternativa = opciones.find(op => op.value !== select1.value); if (alternativa) select2.value = alternativa.value; } quincenalWrap.classList.remove('d-none'); if (label) label.innerText = 'Dias de Pago'; } else { const previo = select.value || ''; select.disabled = false; select.classList.remove('d-none'); select.innerHTML = html; if (opciones.some(op => op.value === previo)) select.value = previo; if (!select.value && opciones.length) select.value = String(opciones[0].value); select1.disabled = true; select2.disabled = true; quincenalWrap.classList.add('d-none'); if (label) label.innerText = 'Dia de Pago'; } wrap.classList.remove('d-none'); }
+  function prepararModalCreditoManual(clienteId, clienteNombre, returnTo) { const form = document.getElementById('manualCreditoForm'); if (form) form.reset(); document.getElementById('manualCreditoClienteId').value = clienteId; document.getElementById('manualCreditoClienteNombre').innerText = clienteNombre || '{{ nombre_completo }}'; document.getElementById('manualCreditoReturnTo').value = returnTo || '{{ request.path }}'; const fechaInput = document.getElementById('manualCreditoFechaInicio'); if (fechaInput) fechaInput.value = new Date().toISOString().slice(0, 10); const periodicidad = document.getElementById('manualCreditoPeriodicidad'); if (periodicidad) periodicidad.value = 'Mensual'; actualizarOpcionesDiaPagoManualCredito(); new bootstrap.Modal(document.getElementById('modalCreditoManual')).show(); }
+  document.addEventListener('DOMContentLoaded', function() { const fechaInput = document.getElementById('manualCreditoFechaInicio'); if (fechaInput && !fechaInput.value) fechaInput.value = new Date().toISOString().slice(0, 10); fetch('/api/intereses_credito').then(r => r.json()).then(d => { const remotas = (d && d.dias_pago) ? d.dias_pago : {}; opcionesDiaPagoManual = { Semanal: (remotas.Semanal && remotas.Semanal.length) ? remotas.Semanal : opcionesDiaPagoManualFallback.Semanal, Quincenal: (remotas.Quincenal && remotas.Quincenal.length) ? remotas.Quincenal : opcionesDiaPagoManualFallback.Quincenal, Mensual: (remotas.Mensual && remotas.Mensual.length) ? remotas.Mensual : opcionesDiaPagoManualFallback.Mensual }; actualizarOpcionesDiaPagoManualCredito(); }).catch(() => { opcionesDiaPagoManual = JSON.parse(JSON.stringify(opcionesDiaPagoManualFallback)); actualizarOpcionesDiaPagoManualCredito(); }); });
+</script>
+{% endblock %}
