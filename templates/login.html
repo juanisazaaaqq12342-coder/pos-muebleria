@@ -171,7 +171,7 @@
       <div class="text-center mb-5">
         <img src="{{ url_for('static', filename=brand_logo_static, v=brand_logo_version) }}" alt="Logo JL Muebleria" class="logo-login-muebleria">
         <div class="brand-accent">{{ configuracion.nombre_empresa }}</div>
-        <div class="text-white-50 small text-uppercase tracking-widest fw-bold">GestiÃ³n de Inventario y Ventas</div>
+        <div class="text-white-50 small text-uppercase tracking-widest fw-bold">Gestión de Inventario y Ventas</div>
       </div>
 
       {% with m=get_flashed_messages(with_categories=true) %}
@@ -193,10 +193,10 @@
         </div>
 
         <div class="mb-5">
-          <label class="form-label text-white-50 mb-2">ContraseÃ±a</label>
+          <label class="form-label text-white-50 mb-2">Contraseña</label>
           <div class="input-group-custom d-flex align-items-center">
             <i class="bi bi-lock h5 m-0"></i>
-            <input id="passwordInput" type="password" name="password" class="form-control" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required>
+            <input id="passwordInput" type="password" name="password" class="form-control" placeholder="********" required>
             <button id="togglePasswordBtn" type="button" class="password-toggle-btn" aria-label="Mostrar clave" aria-pressed="false">
               <i id="togglePasswordIcon" class="bi bi-eye"></i>
             </button>
@@ -204,7 +204,7 @@
         </div>
 
         <button type="submit" class="btn btn-primary w-100 py-3 fw-bold fs-5 mb-4">
-          INICIAR SESIÃ“N
+          INICIAR SESIÓN
         </button>
 
         <div class="text-center">
@@ -231,4 +231,5 @@
 </body>
 
 </html>
+
 

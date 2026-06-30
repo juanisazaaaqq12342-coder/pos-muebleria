@@ -3,7 +3,7 @@
 {% block content %}
 
 <!-- Mensajes Flash -->
-<!-- Alertas de Ã©xito de venta -->
+<!-- Alertas de éxito de venta -->
 {% if request.args.get('last_venta_id') %}
 <div class="alert alert-success pos-success-banner alert-dismissible fade show shadow-lg d-flex align-items-center justify-content-between mb-4 rounded-4 animate-slide-in" role="alert">
     <div class="d-flex align-items-center gap-2">
@@ -20,7 +20,7 @@
 {% endif %}
 
 <div class="row h-100 g-3">
-  <!-- Izquierda: CatÃ¡logo y Filtros -->
+  <!-- Izquierda: Catálogo y Filtros -->
   <div class="col-lg-8 col-md-7 border-end d-flex flex-column h-100 pb-3 pos-catalog-column">
     
     <div class="d-flex flex-wrap justify-content-between mb-4 align-items-center gap-3 animate-slide-in pos-top-toolbar">
@@ -49,7 +49,7 @@
       </div>
     </div>
 
-    <!-- PestaÃ±as CategorÃ­as -->
+    <!-- Pestañas Categorías -->
     <div class="d-flex gap-2 overflow-auto pb-3 mb-4 sticky-top animate-fade-in custom-scrollbar pos-categories-sticky" style="background: var(--bg-main);">
       {% set base=url_for('punto_venta') %}
       {% set qsuffix = ('&q=' ~ (search_q|urlencode)) if search_q else '' %}
@@ -147,7 +147,7 @@
               <div class="small mt-2 opacity-90">
                 <span class="me-2"><i class="bi bi-wallet2 me-1"></i>Cartera: <b>${{ "{:,.0f}".format(cliente_deuda or 0) }}</b></span>
                 {% if cliente_credito_activo %}
-                <span><i class="bi bi-receipt me-1"></i>{{ cliente_credito_activo.codigo }} Â· Saldo: <b>${{ "{:,.0f}".format(cliente_credito_activo.saldo_actual or 0) }}</b></span>
+                <span><i class="bi bi-receipt me-1"></i>{{ cliente_credito_activo.codigo }} · Saldo: <b>${{ "{:,.0f}".format(cliente_credito_activo.saldo_actual or 0) }}</b></span>
                 {% endif %}
               </div>
               {% endif %}
@@ -158,12 +158,12 @@
         </div>
       </div>
 
-      <!-- Ãrea de Ãtems -->
+      <!-- Área de Ítems -->
       <div class="flex-grow-1 overflow-auto bg-white p-3 custom-scrollbar">
         {% if not items_agrupados %}
         <div class="h-100 d-flex flex-column align-items-center justify-content-center text-muted opacity-25">
           <i class="bi bi-bag-plus display-1 mb-3"></i>
-          <h6 class="fw-bold">Esperando selecciÃ³n...</h6>
+          <h6 class="fw-bold">Esperando selección...</h6>
         </div>
         {% else %}
         <div class="d-flex flex-column gap-3">
@@ -231,7 +231,7 @@
                   </select>
                 </div>
                 <div class="col-6">
-                  <label class="form-label text-muted small fw-bold text-uppercase mb-0">NÂ° Cuotas</label>
+                  <label class="form-label text-muted small fw-bold text-uppercase mb-0">N° Cuotas</label>
                   <input type="number" name="numero_cuotas" id="cotizacionNumeroCuotasInput" class="form-control text-center fw-bold"
                          min="1" max="120" value="12" oninput="calcularCotizacionRapida()">
                 </div>
@@ -270,7 +270,7 @@
           </div>
 
           {% if venta %}
-          <form action="{{ url_for('cancelar_venta', venta_id=venta.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Â¿Eliminar esta orden?')">
+          <form action="{{ url_for('cancelar_venta', venta_id=venta.id) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar esta orden?')">
             <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
             <button type="submit" class="btn btn-link text-danger btn-sm text-decoration-none fw-bold p-0">
               <i class="bi bi-trash3 me-1"></i> Cancelar Pedido
@@ -294,7 +294,7 @@
         <input type="hidden" name="producto_id" id="mod_prod_id">
         
         <div class="modal-header border-bottom-0 pt-4 px-4 bg-white">
-          <h4 class="modal-title fw-bold text-dark" id="mod_prod_title">AÃ±adir al Pedido</h4>
+          <h4 class="modal-title fw-bold text-dark" id="mod_prod_title">Añadir al Pedido</h4>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         
@@ -327,7 +327,7 @@
         
         <div class="modal-footer bg-light-subtle border-0 p-4">
           <button type="submit" id="btnAgregarConfirm" class="btn btn-primary w-100 py-3 fw-bold shadow-accent rounded-pill">
-            <i class="bi bi-cart-plus me-2"></i>AÃ‘ADIR A LA CANASTA
+            <i class="bi bi-cart-plus me-2"></i>AÑADIR A LA CANASTA
           </button>
         </div>
       </form>
@@ -359,13 +359,13 @@
                             data-email="{{ c.email or '' }}"
                             data-notas="{{ c.notas or '' }}"
                             {% if venta and venta.cliente_id == c.id %}selected{% endif %}>
-                        {{ c.nombre }}{% if c.telefono %} Â· {{ c.telefono }}{% endif %}
+                        {{ c.nombre }}{% if c.telefono %} · {{ c.telefono }}{% endif %}
                     </option>
                     {% endfor %}
                 </select>
             </div>
             <div class="mb-3">
-                <input type="number" class="form-control" name="telefono" placeholder="TelÃ©fono">
+                <input type="number" class="form-control" name="telefono" placeholder="Teléfono">
             </div>
             <div class="mb-3">
                 <input type="text" class="form-control" name="nombre" placeholder="Nombre completo">
@@ -380,13 +380,13 @@
                 <input type="email" class="form-control" name="email" placeholder="Correo electronico">
             </div>
             <div class="mb-3">
-                <input type="text" class="form-control" name="direccion" placeholder="DirecciÃ³n despacho">
+                <input type="text" class="form-control" name="direccion" placeholder="Dirección despacho">
             </div>
             <div class="mb-3">
                 <textarea class="form-control" name="notas" rows="2" placeholder="Notas del cliente"></textarea>
             </div>
             <p class="small text-muted mb-3">
-                Si seleccionas un cliente existente, se asigna a la venta. Si no, se crea/busca por telÃ©fono.
+                Si seleccionas un cliente existente, se asigna a la venta. Si no, se crea/busca por teléfono.
             </p>
             <button type="submit" class="btn btn-primary w-100">CONFIRMAR</button>
         </form>
@@ -402,7 +402,7 @@
     <div class="modal-content border-0 shadow-lg overflow-hidden rounded-5">
       <div class="modal-header bg-dark text-white p-4">
         <div>
-          <h5 class="modal-title fw-bold mb-0">Confirmar TransacciÃ³n</h5>
+          <h5 class="modal-title fw-bold mb-0">Confirmar Transacción</h5>
           <div class="small opacity-75">build: credito-cliente-v4</div>
         </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -423,7 +423,7 @@
                     <option value="Transferencia">Transferencia</option>
                     <option value="Tarjeta">Tarjeta</option>
                     <option value="Mixto">Mixto</option>
-                    <option value="Cotizacion" class="text-muted">Solo CotizaciÃ³n</option>
+                    <option value="Cotizacion" class="text-muted">Solo Cotización</option>
                 </select>
                 <input type="hidden" id="metodoPagoHidden" name="metodo_pago" value="Efectivo">
                 <input type="hidden" id="modoCreditoActivoInput" name="modo_credito_activo" value="0">
@@ -432,7 +432,7 @@
                 <label class="form-label text-muted small fw-bold text-uppercase">Monto Recibido</label>
                 <div class="d-flex gap-2 mb-2">
                     <button type="button" id="btnTipoPrecioContado" class="btn btn-outline-success btn-sm flex-fill fw-bold rounded-pill border-2" onclick="setTipoPrecio('contado')">Contado</button>
-                    <button type="button" id="btnTipoPrecioCredito" class="btn btn-outline-warning btn-sm flex-fill fw-bold rounded-pill border-2" onclick="activarModoCredito()">CrÃ©dito</button>
+                    <button type="button" id="btnTipoPrecioCredito" class="btn btn-outline-warning btn-sm flex-fill fw-bold rounded-pill border-2" onclick="activarModoCredito()">Crédito</button>
                 </div>
                 <input type="number" id="montoRecibidoInput" name="monto_recibido" class="form-control form-control-lg text-center fw-bold bg-light border-0" value="{{ total }}">
                 <div class="mt-2 d-none" id="precioContadoBlock">
@@ -462,10 +462,10 @@
                     </div>
                 </div>
             </div>
-            <!-- DATOS DEL CRÃ‰DITO -->
+            <!-- DATOS DEL CRÉDITO -->
             <div class="d-none" id="creditoPlanBlock">
               <hr class="my-3">
-              <h6 class="fw-bold text-dark mb-3" id="creditoHeaderTitle"><i class="bi bi-calculator me-2 text-primary"></i>Datos del CrÃ©dito</h6>
+              <h6 class="fw-bold text-dark mb-3" id="creditoHeaderTitle"><i class="bi bi-calculator me-2 text-primary"></i>Datos del Crédito</h6>
               <div id="clienteDatosBlock">
               <!-- Cliente -->
               <div class="mb-3">
@@ -475,17 +475,17 @@
                   {% for c in clientes %}
                   <option value="{{ c.id }}" data-nombre="{{ c.nombre or '' }}" data-apellido="{{ c.apellido or '' }}" data-telefono="{{ c.telefono or '' }}" data-direccion="{{ c.direccion or '' }}" data-documento="{{ c.documento or '' }}" data-email="{{ c.email or '' }}" data-notas="{{ c.notas or '' }}"
                     {% if venta and venta.cliente_id == c.id %}selected{% endif %}>
-                    {{ c.nombre }}{% if c.telefono %} Â· {{ c.telefono }}{% endif %}
+                    {{ c.nombre }}{% if c.telefono %} · {{ c.telefono }}{% endif %}
                   </option>
                   {% endfor %}
                 </select>
               </div>
               <div class="row g-2 mb-3">
-                <div class="col-6"><input type="number" class="form-control form-control-sm" name="credito_cliente_telefono" placeholder="TelÃ©fono"></div>
+                <div class="col-6"><input type="number" class="form-control form-control-sm" name="credito_cliente_telefono" placeholder="Teléfono"></div>
                 <div class="col-6"><input type="text" class="form-control form-control-sm" name="credito_cliente_nombre" placeholder="Nombre"></div>
                 <div class="col-6"><input type="text" class="form-control form-control-sm" name="credito_cliente_apellido" placeholder="Apellido"></div>
                 <div class="col-6"><input type="text" class="form-control form-control-sm" name="credito_cliente_documento" placeholder="CC o NIT"></div>
-                <div class="col-12"><input type="text" class="form-control form-control-sm" name="credito_cliente_direccion" placeholder="DirecciÃ³n"></div>
+                <div class="col-12"><input type="text" class="form-control form-control-sm" name="credito_cliente_direccion" placeholder="Dirección"></div>
                 <div class="col-12"><input type="email" class="form-control form-control-sm" name="credito_cliente_email" placeholder="Correo electronico"></div>
                 <div class="col-12"><textarea class="form-control form-control-sm" name="credito_cliente_notas" rows="2" placeholder="Notas del cliente"></textarea></div>
               </div>
@@ -548,7 +548,7 @@
                   </select>
                 </div>
                 <div class="col-6">
-                  <label class="form-label text-muted small fw-bold text-uppercase">NÂ° Cuotas</label>
+                  <label class="form-label text-muted small fw-bold text-uppercase">N° Cuotas</label>
                   <input type="number" name="numero_cuotas" id="numeroCuotasInput" class="form-control text-center fw-bold"
                     min="1" max="120" value="12" oninput="calcularCredito()">
                 </div>
@@ -584,7 +584,7 @@
                       <div class="fw-bold text-dark" id="rc_saldo"></div>
                     </div>
                     <div class="col-6 d-none">
-                      <div class="text-muted small">InterÃ©s (<span id="rc_pct"></span>%)</div>
+                      <div class="text-muted small">Interés (<span id="rc_pct"></span>%)</div>
                       <div class="fw-bold text-warning" id="rc_interes"></div>
                     </div>
                     <div class="col-6">
@@ -601,22 +601,22 @@
                 <div class="small fw-bold text-muted text-uppercase mb-1">Plan de Pagos</div>
                 <div class="table-responsive" style="max-height:160px;overflow-y:auto;">
                   <table class="table table-sm table-bordered mb-0 small">
-                    <thead class="table-dark"><tr><th>NÂ°</th><th>Fecha</th><th>Valor</th></tr></thead>
+                    <thead class="table-dark"><tr><th>N°</th><th>Fecha</th><th>Valor</th></tr></thead>
                     <tbody id="tablaPlanPagos"></tbody>
                   </table>
                 </div>
               </div>
               <!-- Observaciones -->
               <div class="mt-3">
-                <label class="form-label text-muted small fw-bold text-uppercase">Observaciones del crÃ©dito</label>
+                <label class="form-label text-muted small fw-bold text-uppercase">Observaciones del crédito</label>
                 <textarea name="observaciones_credito" class="form-control form-control-sm" rows="2" placeholder="Opcional..."></textarea>
               </div>
               </div>
             </div>
             <div class="mb-3" id="creditoClienteBlock" style="display:none!important"></div>
             <div class="mb-3">
-                <label class="form-label text-muted small fw-bold text-uppercase">DirecciÃ³n de EnvÃ­o</label>
-                <input type="text" name="direccion_envio" class="form-control bg-light border-0" value="{{ venta.direccion_envio or '' if venta else '' }}" placeholder="DirecciÃ³n de entrega">
+                <label class="form-label text-muted small fw-bold text-uppercase">Dirección de Envío</label>
+                <input type="text" name="direccion_envio" class="form-control bg-light border-0" value="{{ venta.direccion_envio or '' if venta else '' }}" placeholder="Dirección de entrega">
             </div>
             <div class="mb-2">
                 <label class="form-label text-muted small fw-bold text-uppercase">Notas de Venta</label>
@@ -820,7 +820,7 @@
             btn.innerHTML='<i class="bi bi-exclamation-triangle me-2"></i>EXCEDE STOCK ('+currentStockLocal+' disp.)';
         } else {
             btn.disabled=false; btn.className='btn btn-primary w-100 py-3 fw-bold shadow-accent rounded-pill';
-            btn.innerHTML='<i class="bi bi-cart-plus me-2"></i>AÃ‘ADIR A LA CANASTA';
+            btn.innerHTML='<i class="bi bi-cart-plus me-2"></i>AÑADIR A LA CANASTA';
         }
     }
 
@@ -1238,6 +1238,7 @@
     }
 </script>
 {% endblock %}
+
 
 
 

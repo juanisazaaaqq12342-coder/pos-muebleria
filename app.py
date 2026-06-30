@@ -28,7 +28,7 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if "user_id" not in session:
-            flash("Debes iniciar sesiÃ³n.", "warning")
+            flash("Debes iniciar sesión.", "warning")
             nxt = request.full_path if request.query_string else request.path
             return redirect(url_for("login", next=nxt))
         return f(*args, **kwargs)
@@ -56,13 +56,13 @@ def inventario_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if session.get("rol") not in ["admin", "bodega"]:
-            flash("Acceso denegado: mÃ³dulo solo para inventario.", "danger")
+            flash("Acceso denegado: módulo solo para inventario.", "danger")
             return redirect(url_for("index"))
         return f(*args, **kwargs)
     return decorated_function
 
 # ==========================
-# CONFIGURACIÃ“N
+# CONFIGURACIÓN
 # ==========================
 
 import sys
@@ -190,13 +190,13 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
 
 class Configuracion(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    nombre_empresa = db.Column(db.String(100), default="Mi MueblerÃ­a")
+    nombre_empresa = db.Column(db.String(100), default="Mi Mueblería")
     nit = db.Column(db.String(50), default="000000000")
-    direccion = db.Column(db.String(200), default="DirecciÃ³n Principal")
+    direccion = db.Column(db.String(200), default="Dirección Principal")
     telefono = db.Column(db.String(50), default="0000000000")
-    mensaje_ticket = db.Column(db.String(200), default="Â¡Gracias por su compra!")
+    mensaje_ticket = db.Column(db.String(200), default="¡Gracias por su compra!")
     base_caja = db.Column(db.Integer, default=0)
-    # ConfiguraciÃ³n de crÃ©ditos e intereses
+    # Configuración de créditos e intereses
     interes_semanal = db.Column(db.Float, default=3.0)
     interes_quincenal = db.Column(db.Float, default=5.0)
     interes_mensual = db.Column(db.Float, default=8.0)
@@ -286,7 +286,7 @@ class Venta(db.Model):
     sede_id = db.Column(db.Integer, db.ForeignKey('sede.id'), nullable=True)
     cliente_id = db.Column(db.Integer, db.ForeignKey('cliente.id'), nullable=True)
     vendedor_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=True)
-    estado = db.Column(db.String(50), default='abierta')  # abierta, pagada, crÃ©dito, cotizaciÃ³n
+    estado = db.Column(db.String(50), default='abierta')  # abierta, pagada, crédito, cotización
     estado_entrega = db.Column(db.String(50), default='Pendiente') # Pendiente, En Ruta, Entregado
     direccion_envio = db.Column(db.String(255), nullable=True)
     cerrado = db.Column(db.Boolean, default=False)
@@ -660,7 +660,7 @@ def extraer_referencias_desde_observaciones(obs):
                 data["celular"] = vv
             elif kk == "parentesco":
                 data["parentesco"] = vv
-            elif kk in {"direccion", "direcciÃ³n"}:
+            elif kk in {"direccion", "dirección"}:
                 data["direccion"] = vv
         if data["nombre"] or data["celular"]:
             refs.append(data)
@@ -846,7 +846,7 @@ def generar_plan_pagos(credito, fecha_inicio, dia_pago=None, cuota_desde=1):
         db.session.add(cuota)
 
 def actualizar_estados_cuotas():
-    """Actualiza automÃ¡ticamente los estados de cuotas segÃºn fecha actual."""
+    """Actualiza automáticamente los estados de cuotas según fecha actual."""
     hoy = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     manana = hoy + timedelta(days=1)
     # Vencidas
@@ -878,7 +878,7 @@ def construir_filas_ficha_credito(credito, max_filas=30):
     return filas
 
 def agrupar_items_venta(venta):
-    """Agrupa los Ã­tems de una venta por producto y nota."""
+    """Agrupa los ítems de una venta por producto y nota."""
     if not venta or not venta.items:
         return []
     agrupados = {}
@@ -953,7 +953,7 @@ def crear_datos_iniciales():
         if not Usuario.query.filter_by(username="admin").first():
             # Sedes
             # Sedes
-            sede1 = Sede(nombre="Sede Principal", direccion="DirecciÃ³n Principal", telefono="0000000000")
+            sede1 = Sede(nombre="Sede Principal", direccion="Dirección Principal", telefono="0000000000")
             db.session.add(sede1)
             db.session.flush()
             # Usuarios
@@ -968,7 +968,7 @@ def crear_datos_iniciales():
             db.session.flush()
             sincronizar_cartera_cliente(cliente_demo.id)
             cambios_pendientes = True
-            print(">>> SISTEMA MUEBLERÃ­ÂA LISTO")
+            print(">>> SISTEMA MUEBLERíA LISTO")
 
         estado_bootstrap_admin = asegurar_admin_bootstrap_desde_entorno()
         if estado_bootstrap_admin:
@@ -1094,7 +1094,7 @@ def buscar_rapido():
         "cartera": "cobranzas",
         "cobranzas": "cobranzas",
         "credito": "cobranzas",
-        "crÃ©dito": "cobranzas",
+        "crédito": "cobranzas",
     }
     for k, target in prefixes.items():
         if ql.startswith(k + ":") or ql.startswith(k + " "):
@@ -1104,7 +1104,7 @@ def buscar_rapido():
 
     term_like = f"%{term}%"
 
-    # Atajos solo cuando el texto completo coincide exactamente con mÃ³dulo
+    # Atajos solo cuando el texto completo coincide exactamente con módulo
     if query_target is None:
         exact_nav = {
             "punto de venta": "pos",
@@ -1129,7 +1129,7 @@ def buscar_rapido():
     if query_target == "productos":
         if rol == "bodega":
             return redirect(url_for("admin", q=term))
-        # Si es bÃºsqueda real de producto, mejor ir al POS filtrado.
+        # Si es búsqueda real de producto, mejor ir al POS filtrado.
         if term and term.lower() not in ["producto", "productos", "inventario"]:
             return redirect(url_for("punto_venta", categoria="Todas", q=term))
         if rol == "admin":
@@ -1150,8 +1150,8 @@ def buscar_rapido():
     if query_target == "sedes" and rol == "admin":
         return redirect(url_for("sedes"))
 
-    # BÃºsqueda por contenido real (texto libre)
-    # 1) Cliente por nombre/telÃ©fono/documento/direcciÃ³n
+    # Búsqueda por contenido real (texto libre)
+    # 1) Cliente por nombre/teléfono/documento/dirección
     cli_match = (
         Cliente.query
         .filter(
@@ -1210,7 +1210,7 @@ def buscar_rapido():
         if v_match:
             return redirect(url_for("historial_ventas", q=term))
 
-    # 4) CrÃ©dito (admin/cobrador)
+    # 4) Crédito (admin/cobrador)
     if rol in ["admin", "cobrador"]:
         cr_match = (
             Credito.query
@@ -1534,7 +1534,7 @@ def actualizar_info_venta():
         if doc:
             doc_colision = Cliente.query.filter(Cliente.documento == doc, Cliente.id != c.id).first()
             if doc_colision:
-                flash("La cÃ©dula/NIT ya existe en otro cliente. No se actualizÃ³ ese dato.", "warning")
+                flash("La cédula/NIT ya existe en otro cliente. No se actualizó ese dato.", "warning")
             else:
                 c.documento = doc
         if tel and len(tel) >= 7:
@@ -1560,7 +1560,7 @@ def actualizar_info_venta():
                 c.telefono = tel
     else:
         if not tel or len(tel) < 7:
-            flash("Selecciona un cliente existente o escribe un telÃ©fono vÃ¡lido para crear/buscar.", "warning")
+            flash("Selecciona un cliente existente o escribe un teléfono válido para crear/buscar.", "warning")
             return redirect(request.referrer or url_for("punto_venta"))
 
         c = Cliente.query.filter_by(telefono=tel).first()
@@ -1592,7 +1592,7 @@ def actualizar_info_venta():
                     c.notas = notas_cliente
                 if tel and len(tel) >= 7:
                     c.telefono = tel
-                flash("La cÃ©dula/NIT ya existÃ­a, se asignÃ³ ese cliente.", "info")
+                flash("La cédula/NIT ya existía, se asignó ese cliente.", "info")
         else:
             if nom:
                 c.nombre = nom
@@ -1607,7 +1607,7 @@ def actualizar_info_venta():
             if doc:
                 doc_colision = Cliente.query.filter(Cliente.documento == doc, Cliente.id != c.id).first()
                 if doc_colision:
-                    flash("La cÃ©dula/NIT ya existe en otro cliente. No se actualizÃ³ ese dato.", "warning")
+                    flash("La cédula/NIT ya existe en otro cliente. No se actualizó ese dato.", "warning")
                 else:
                     c.documento = doc
     
@@ -1785,17 +1785,17 @@ def cerrar_cuenta():
 
             if obligatorio and not cliente_sel_id:
                 if (not tel or len(tel) < 7) and not doc:
-                    return None, False, f"Para {contexto} debes seleccionar cliente o ingresar telÃ©fono vÃ¡lido / CC-NIT."
+                    return None, False, f"Para {contexto} debes seleccionar cliente o ingresar teléfono válido / CC-NIT."
                 if contexto in {"contado", "credito"}:
                     if not nom:
                         return None, False, f"En {contexto} debes ingresar el nombre del cliente."
                     if not dire:
-                        return None, False, f"En {contexto} debes ingresar la direcciÃ³n del cliente."
+                        return None, False, f"En {contexto} debes ingresar la dirección del cliente."
                 if contexto == "credito":
                     if not ape:
                         return None, False, "En credito debes ingresar el apellido del cliente."
                     if not doc:
-                        return None, False, "En credito debes ingresar la cÃ©dula o NIT del cliente."
+                        return None, False, "En credito debes ingresar la cédula o NIT del cliente."
 
             if not cliente_sel_id and not tel and not doc and not nom and not ape and not dire and not correo and not notas_cliente:
                 return None, False, ""
@@ -1961,17 +1961,17 @@ def cerrar_cuenta():
                 "notas": notas_cotizacion,
                 "created_at": datetime.now().isoformat(timespec="seconds"),
             }
-            registrar_auditoria("CotizaciÃ³n", f"CotizaciÃ³n preview de venta abierta #{v.id} por {v.total}")
-            flash("CotizaciÃ³n generada en PDF sin descontar inventario.", "success")
+            registrar_auditoria("Cotización", f"Cotización preview de venta abierta #{v.id} por {v.total}")
+            flash("Cotización generada en PDF sin descontar inventario.", "success")
             return redirect(url_for("imprimir_ticket", venta_id=v.id, cotizacion=1, preview=1))
 
-        # ValidaciÃ³n de montos
+        # Validación de montos
         efectivo = parse_non_negative_int(request.form.get("pago_efectivo") or 0)
         tarjeta = parse_non_negative_int(request.form.get("pago_tarjeta") or 0)
         transf = parse_non_negative_int(request.form.get("pago_transferencia") or 0)
         recibido = parse_non_negative_int(request.form.get("monto_recibido") or 0)
         if any(x is None for x in [efectivo, tarjeta, transf, recibido]):
-            return fail_checkout("montos_invalidos", "Error: Los montos deben ser valores numÃ©ricos.", "danger")
+            return fail_checkout("montos_invalidos", "Error: Los montos deben ser valores numéricos.", "danger")
         
         if metodo == "Efectivo":
             efectivo, tarjeta, transf = recibido, 0, 0
@@ -1996,7 +1996,7 @@ def cerrar_cuenta():
         faltante = max((v.total or 0) - recibido, 0)
 
         if metodo == "Credito" and faltante <= 0:
-            return fail_checkout("credito_sin_saldo", "Para registrar crÃ©dito, la cuota inicial debe ser menor al total de la venta.", "warning")
+            return fail_checkout("credito_sin_saldo", "Para registrar crédito, la cuota inicial debe ser menor al total de la venta.", "warning")
 
         cliente_sel_id_post = parse_non_negative_int(request.form.get("credito_cliente_id"))
         tel_cliente_post = normalizar_telefono(request.form.get("credito_cliente_telefono"))
@@ -2207,12 +2207,12 @@ def cerrar_cuenta():
             db.session.flush()
             sincronizar_cartera_cliente(v.cliente_id)
 
-        # Blindaje: nunca cerrar una venta a crÃ©dito sin cliente/registro de crÃ©dito.
+        # Blindaje: nunca cerrar una venta a crédito sin cliente/registro de crédito.
         if metodo == "Credito":
             if not v.cliente_id:
-                return fail_checkout("credito_sin_cliente", "No se pudo asociar el cliente del crÃ©dito. Revisa los datos del cliente.", "warning")
+                return fail_checkout("credito_sin_cliente", "No se pudo asociar el cliente del crédito. Revisa los datos del cliente.", "warning")
             if not nuevo_credito and faltante > 0:
-                return fail_checkout("credito_no_generado", "No se pudo generar la cartera del crÃ©dito. Intenta de nuevo.", "warning")
+                return fail_checkout("credito_no_generado", "No se pudo generar la cartera del crédito. Intenta de nuevo.", "warning")
 
         ok_stock, msg_stock = validar_stock_venta(v)
         if not ok_stock:
@@ -2222,7 +2222,7 @@ def cerrar_cuenta():
         v.fecha_cierre = datetime.now()
         v.metodo_pago = metodo
         v.cambio = recibido - v.total if recibido > v.total else 0
-        v.estado = 'A CrÃ©dito' if (metodo == "Credito" and faltante > 0) else 'Pagada'
+        v.estado = 'A Crédito' if (metodo == "Credito" and faltante > 0) else 'Pagada'
         v.estado_entrega = 'Pendiente'
         
         # Deduct stock & Kardex
@@ -2264,13 +2264,13 @@ def cerrar_cuenta():
         return redirect(url_for("punto_venta"))
 
 # ==========================
-# GESTIÃ“N LOGÃSTICA
+# GESTIÓN LOGÍSTICA
 # ==========================
 @app.route("/logistica")
 @login_required
 def logistica():
     if session.get("rol") not in ["admin", "bodega"]:
-        flash("Acceso denegado: Se requieren permisos de LogÃ­stica/Admin.", "danger")
+        flash("Acceso denegado: Se requieren permisos de Logística/Admin.", "danger")
         return redirect(url_for("index"))
         
     sede_id = request.args.get('sede_id')
@@ -2278,7 +2278,7 @@ def logistica():
         sede_id = session.get('sede_id')
     
     # Solo ventas cerradas que no sean cotizaciones
-    query = Venta.query.filter(Venta.estado != 'cotizaciÃ³n', Venta.cerrado == True)
+    query = Venta.query.filter(Venta.estado != 'cotización', Venta.cerrado == True)
     if sede_id:
         query = query.filter_by(sede_id=sede_id)
     
@@ -2300,7 +2300,7 @@ def api_logistica_estado():
     if v:
         v.estado_entrega = nuevo_estado
         db.session.commit()
-        registrar_auditoria("LogÃ­stica", f"Despacho Venta #{venta_id} actualizado a {nuevo_estado}")
+        registrar_auditoria("Logística", f"Despacho Venta #{venta_id} actualizado a {nuevo_estado}")
         return jsonify({"status": "ok"})
     return jsonify({"status": "error", "message": "Venta no encontrada"}), 404
 
@@ -2449,7 +2449,7 @@ def abonar_cliente():
         try:
             monto = int(monto_str or 0)
         except ValueError:
-            flash("Error: El monto del abono debe ser un valor numÃ©rico.", "danger")
+            flash("Error: El monto del abono debe ser un valor numérico.", "danger")
             return redirect(request.referrer)
 
         c = db.session.get(Cliente, cid)
@@ -2495,20 +2495,20 @@ def abonar_cliente():
             db.session.commit()
             registrar_auditoria("Abono", f"Cliente: {c.nombre} - Monto aplicado: {monto_aplicado} - Deuda anterior: {old_deuda}")
             if monto > monto_aplicado:
-                flash(f"Abono aplicado por ${monto_aplicado:,.0f}. Se ignorÃ³ excedente de ${monto - monto_aplicado:,.0f}.", "warning")
+                flash(f"Abono aplicado por ${monto_aplicado:,.0f}. Se ignoró excedente de ${monto - monto_aplicado:,.0f}.", "warning")
             else:
                 flash(f"Abono registrado correctamente. Saldo cartera: ${deuda_resultante:,.0f}", "success")
         else:
-            flash("Error: Cliente no encontrado o monto invÃ¡lido.", "warning")
+            flash("Error: Cliente no encontrado o monto inválido.", "warning")
     
     except Exception as e:
         db.session.rollback()
-        flash(f"Error tÃ©cnico al registrar abono: {e}", "danger")
+        flash(f"Error técnico al registrar abono: {e}", "danger")
     
     return redirect(request.referrer or url_for("cobranzas"))
 
 # ==========================
-# GESTIÃ“N DE CLIENTES
+# GESTIÓN DE CLIENTES
 # ==========================
 @app.route("/credito/formato/<int:credito_id>")
 @cobrador_required
@@ -2637,7 +2637,7 @@ def api_alertas_cobro():
 @app.route("/pagar_cuota/<int:cuota_id>", methods=["POST"])
 @login_required
 def pagar_cuota(cuota_id):
-    """Registra pago o abono de una cuota individual, con amortizaciÃ³n a futuras cuotas si el monto es mayor."""
+    """Registra pago o abono de una cuota individual, con amortización a futuras cuotas si el monto es mayor."""
     if session.get("rol") not in ["admin", "cobrador"]:
         return redirect(url_for("index"))
     try:
@@ -2696,7 +2696,7 @@ def pagar_cuota(cuota_id):
                 saldo_posterior=saldo_credito_actual,
                 metodo_pago=metodo,
                 usuario_id=session.get("user_id"),
-                nota=observacion or f"AmortizaciÃ³n cuota #{c.numero_cuota}"
+                nota=observacion or f"Amortización cuota #{c.numero_cuota}"
             ))
 
         credito.saldo_actual = saldo_credito_actual
@@ -2718,10 +2718,10 @@ def pagar_cuota(cuota_id):
             
             msg_exito = f"Pago de ${monto_a_distribuir:,.0f} registrado, aplicando a cuotas: {', '.join(cuotas_afectadas)}."
             if excedente > 0:
-                msg_exito += f" Se ignorÃ³ un excedente de ${excedente:,.0f}."
+                msg_exito += f" Se ignoró un excedente de ${excedente:,.0f}."
             flash(msg_exito, "success")
         else:
-            flash("El crÃ©dito ya no tiene saldo pendiente.", "info")
+            flash("El crédito ya no tiene saldo pendiente.", "info")
 
     except Exception as e:
         db.session.rollback()
@@ -2840,7 +2840,7 @@ def cliente_historial(cliente_id):
     )
 
     referencias = sorted(list(cliente.referencias or []), key=lambda r: (r.orden or 9, -(r.id or 0)))
-    # Fallback para datos antiguos donde referencias estaban solo en observaciones del crÃ©dito.
+    # Fallback para datos antiguos donde referencias estaban solo en observaciones del crédito.
     if not referencias:
         for cr in creditos:
             refs_obs = extraer_referencias_desde_observaciones(cr.observaciones)
@@ -2898,12 +2898,12 @@ def nuevo_cliente():
     if tel and nom and len(tel) >= 7:
         existe = Cliente.query.filter_by(telefono=tel).first()
         if existe:
-            flash("El cliente ya existe con ese telÃ©fono", "warning")
+            flash("El cliente ya existe con ese teléfono", "warning")
         else:
             if doc:
                 existe_doc = Cliente.query.filter_by(documento=doc).first()
                 if existe_doc:
-                    flash("Ya existe un cliente con esa cÃ©dula/NIT.", "warning")
+                    flash("Ya existe un cliente con esa cédula/NIT.", "warning")
                     return redirect(request.referrer)
             c = Cliente(
                 nombre=nom,
@@ -3096,7 +3096,7 @@ def historial_ventas():
 def api_devolucion():
     detalle_id = request.form.get("detalle_id")
     cant_a_devolver = parse_non_negative_int(request.form.get("cantidad", 0)) or 0
-    motivo = request.form.get("motivo", "DevoluciÃ³n General")
+    motivo = request.form.get("motivo", "Devolución General")
     
     item = DetalleVenta.query.get_or_404(detalle_id)
     venta = item.venta
@@ -3104,20 +3104,20 @@ def api_devolucion():
     # Validaciones
     disp_para_dev = item.cantidad - item.cantidad_devuelta
     if cant_a_devolver <= 0 or cant_a_devolver > disp_para_dev:
-        flash("Cantidad de devoluciÃ³n invÃ¡lida", "danger")
+        flash("Cantidad de devolución inválida", "danger")
         return redirect(request.referrer)
     
     # 1. Actualizar DetalleVenta
     item.cantidad_devuelta += cant_a_devolver
     
-    # 2. Incrementar Stock en Bodega de DaÃ±ados
+    # 2. Incrementar Stock en Bodega de Dañados
     inv = InventarioSede.query.filter_by(producto_id=item.producto_id, sede_id=venta.sede_id).first()
     if not inv:
         inv = InventarioSede(producto_id=item.producto_id, sede_id=venta.sede_id, cantidad=0, cantidad_danado=0)
         db.session.add(inv)
     inv.cantidad_danado += cant_a_devolver
     
-    # 3. LÃ³gica Financiera (Reembolso AutomÃ¡tico)
+    # 3. Lógica Financiera (Reembolso Automático)
     valor_devuelto = cant_a_devolver * item.precio_unitario
     
     # Si hay deuda del cliente, restamos a la deuda primero
@@ -3128,15 +3128,15 @@ def api_devolucion():
             cliente_id=venta.cliente_id,
             tipo='abono',
             monto=a_restar_deuda,
-            nota=f"CrÃ©dito por DevoluciÃ³n Item {item.producto.nombre} (Venta #{venta.id}) - {motivo}",
+            nota=f"Crédito por Devolución Item {item.producto.nombre} (Venta #{venta.id}) - {motivo}",
             usuario_id=session.get("user_id")
         ))
         valor_devuelto -= a_restar_deuda
     
-    # Si queda saldo (porque ya pagÃ³ o superÃ³ la deuda), generamos un Gasto automÃ¡tico
+    # Si queda saldo (porque ya pagó o superó la deuda), generamos un Gasto automático
     if valor_devuelto > 0:
         db.session.add(Gasto(
-            descripcion=f"REEMBOLSO DevoluciÃ³n: {item.producto.nombre} (Venta #{venta.id}) - {motivo}",
+            descripcion=f"REEMBOLSO Devolución: {item.producto.nombre} (Venta #{venta.id}) - {motivo}",
             monto=valor_devuelto,
             tipo_gasto='devolucion',
             sede_id=venta.sede_id,
@@ -3144,12 +3144,12 @@ def api_devolucion():
         ))
         
     db.session.commit()
-    flash(f"DevoluciÃ³n procesada: {cant_a_devolver} {item.producto.nombre} a Bodega de DaÃ±ados.", "success")
+    flash(f"Devolución procesada: {cant_a_devolver} {item.producto.nombre} a Bodega de Dañados.", "success")
     return redirect(request.referrer)
 
 
 # ==========================
-# SECCIÃ“N ADMIN / CRUD
+# SECCIÓN ADMIN / CRUD
 # ==========================
 @app.route("/admin", methods=["GET","POST"])
 @inventario_required
@@ -3466,7 +3466,7 @@ def eliminar_producto_admin(prod_id):
     return redirect(url_for("admin"))
 
 # ==========================
-# CATEGORÃAS
+# CATEGORÍAS
 # ==========================
 @app.route("/admin/categorias", methods=["POST"])
 @admin_required
@@ -3618,7 +3618,7 @@ def caja():
     )
     query_gastos = Gasto.query.filter(Gasto.fecha>=st, Gasto.fecha<=en)
     
-    # Nuevos abonos del dÃ­a (para la caja)
+    # Nuevos abonos del día (para la caja)
     query_abonos = AbonoCredito.query.filter(AbonoCredito.fecha>=st, AbonoCredito.fecha<=en)
 
     if sede_filtro is not None:
@@ -3633,11 +3633,11 @@ def caja():
     te = 0
     td = 0
     
-    # Sumar pagos de ventas directas y cuotas iniciales de crÃ©ditos
+    # Sumar pagos de ventas directas y cuotas iniciales de créditos
     for v in ventas:
         if v.metodo_pago == "Credito":
             # La cuota inicial se asume en efectivo por defecto a menos que agreguemos un selector luego,
-            # pero tÃ­picamente ingresa en caja fÃ­sica.
+            # pero típicamente ingresa en caja física.
             credito = Credito.query.filter_by(venta_id=v.id).first()
             if credito and credito.cuota_inicial:
                 te += credito.cuota_inicial
@@ -3646,7 +3646,7 @@ def caja():
             te += efectivo
             td += (tarjeta + transferencia)
             
-    # Sumar pagos de cuotas realizados en el mÃ³dulo de cobranzas
+    # Sumar pagos de cuotas realizados en el módulo de cobranzas
     for a in abonos:
         if a.metodo_pago and a.metodo_pago.lower() in ['tarjeta', 'transferencia', 'digital']:
             td += a.monto
@@ -3692,7 +3692,7 @@ def reportes():
     ventas = query_ventas.all()
     gastos = query_gastos.all()
 
-    # MÃ©tricas BÃ¡sicas
+    # Métricas Básicas
     total_ventas = sum(v.total for v in ventas)
     total_pedidos = len(ventas)
     total_gastos = sum(g.monto for g in gastos)
@@ -3713,10 +3713,10 @@ def reportes():
         total_danados = db.session.query(func.sum(InventarioSede.cantidad_danado)).scalar() or 0
         stock_critico = InventarioSede.query.filter(InventarioSede.cantidad < 3).limit(10).all()
 
-    # Agrupaciones para grÃ¡ficos
+    # Agrupaciones para gráficos
     metodos = {}
     v_por_vendedor = {}
-    v_por_fecha = {} # Para el grÃ¡fico de tendencia
+    v_por_fecha = {} # Para el gráfico de tendencia
 
     for v in ventas:
         m = v.metodo_pago or "Desconocido"
@@ -3739,7 +3739,7 @@ def reportes():
     
     top_productos = sorted([(k, val['qty'], val['total']) for k,val in prod_count.items()], key=lambda x: x[1], reverse=True)[:5]
 
-    # MÃ©tricas especÃ­ficas de CrÃ©ditos
+    # Métricas específicas de Créditos
     query_creditos = Credito.query.filter(Credito.fecha_inicio >= st, Credito.fecha_inicio <= en)
     if sede_filtro is not None:
         query_creditos = query_creditos.join(Venta, Credito.venta_id == Venta.id).filter(Venta.sede_id == sede_filtro)
@@ -3822,7 +3822,7 @@ def admin_configuracion():
 
 
 # ==========================
-# GENERACIÃ“N DE PDF
+# GENERACIÓN DE PDF
 # ==========================
 def safe_text(text):
     """Convierte texto a latin-1 seguro para FPDF."""
@@ -3933,7 +3933,7 @@ def imprimir_ticket(venta_id):
                 draft_vid = 0
             if draft_vid == v.id:
                 notas_ticket = (draft.get("notas") or notas_ticket).strip()
-        # Consumir preview para no reutilizar notas de otra operaciÃ³n.
+        # Consumir preview para no reutilizar notas de otra operación.
         session.pop("cotizacion_preview", None)
     
     pdf = TicketPDF(
@@ -3961,7 +3961,7 @@ def imprimir_ticket(venta_id):
     
     pdf.ln(4)
 
-    # Info cliente (con respaldo desde crÃ©dito asociado, por si venta.cliente fue desvinculado)
+    # Info cliente (con respaldo desde crédito asociado, por si venta.cliente fue desvinculado)
     cliente_ticket = v.cliente
     if not cliente_ticket and v.creditos:
         cliente_ticket = v.creditos[0].cliente
@@ -4335,7 +4335,7 @@ def descargar_cierre_pdf():
 
 @app.errorhandler(404)
 def page_not_found(e):
-    # Evitar confundir 404 con "sesiÃ³n cerrada" cuando el usuario ya estÃ¡ autenticado.
+    # Evitar confundir 404 con "sesión cerrada" cuando el usuario ya está autenticado.
     if request.path.startswith("/static/"):
         return "Not Found", 404
     if session.get("user_id"):
@@ -4346,7 +4346,7 @@ def page_not_found(e):
 @app.errorhandler(500)
 def internal_server_error(e):
     db.session.rollback()
-    flash("OcurriÃ³ un error interno. La operaciÃ³n ha sido cancelada para proteger sus datos.", "danger")
+    flash("Ocurrió un error interno. La operación ha sido cancelada para proteger sus datos.", "danger")
     return redirect(url_for('index')), 500
 
 @app.route("/admin/backup_db")
@@ -4380,6 +4380,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5001"))
     print(f"[POS] build=render-ready pid={os.getpid()} debug={debug_mode} reloader={hot_reload} db={app.config['SQLALCHEMY_DATABASE_URI'].split(':', 1)[0]}")
     app.run(host="0.0.0.0", port=port, debug=debug_mode, use_reloader=hot_reload)
+
 
 
 
