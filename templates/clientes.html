@@ -1,13 +1,13 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block content %}
 <div class="animate-slide-in">
-  <div class="d-flex justify-content-between align-items-center mb-5">
+  <div class="d-flex justify-content-between align-items-center mb-5 page-header-bar clients-header">
     <div>
       <h2 class="fw-bold m-0 text-dark" style="font-family: 'Playfair Display', serif;">Directorio de Clientes</h2>
       <p class="text-muted small m-0 text-uppercase tracking-widest">Base de datos de clientes y saldos a favor</p>
     </div>
-    <div class="d-flex gap-3">
+    <div class="d-flex gap-3 page-header-actions clients-actions">
       <button class="btn btn-primary fw-bold shadow-accent px-4 py-2" data-bs-toggle="modal" data-bs-target="#modalNewClient">
         <i class="bi bi-person-plus-fill me-2"></i>NUEVO CLIENTE
       </button>
@@ -25,7 +25,7 @@
   </div>
 
   <div class="row mb-3">
-    <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-2 clients-view-bar">
       <div class="btn-group" role="group" aria-label="Vistas de clientes">
         <a href="{{ url_for('clientes', q=search_q, vista='todos') }}"
           class="btn btn-sm fw-bold {{ 'btn-primary' if vista != 'credito' else 'btn-outline-primary' }}">
@@ -86,7 +86,7 @@
                   </div>
                 </td>
                 <td class="text-end pe-4">
-                  <div class="d-flex justify-content-end gap-2">
+                  <div class="d-flex justify-content-end gap-2 clients-row-actions">
                     <a href="{{ url_for('cliente_historial', cliente_id=c.id) }}"
                       class="btn btn-sm btn-outline-dark fw-bold rounded-pill px-3 shadow-sm"
                       onclick="event.stopPropagation();">
@@ -133,7 +133,7 @@
         <div class="d-flex flex-column gap-2">
           {% for h in historial_clientes %}
           {% set es_cargo = (h.tipo == 'cargo') %}
-          <div class="d-flex justify-content-between align-items-center p-3 rounded-4 bg-light border">
+          <div class="d-flex justify-content-between align-items-center p-3 rounded-4 bg-light border client-history-item">
             <div>
               <div class="fw-bold">{{ h.cliente.nombre if h.cliente else 'Cliente' }}</div>
               <div class="small text-muted">{{ h.fecha.strftime('%d/%m/%Y %H:%M') }} - {{ h.nota or 'Movimiento de cartera' }}</div>
@@ -297,4 +297,9 @@
   document.addEventListener('DOMContentLoaded', function() { const fechaInput = document.getElementById('manualCreditoFechaInicio'); if (fechaInput && !fechaInput.value) fechaInput.value = new Date().toISOString().slice(0, 10); fetch('/api/intereses_credito').then(r => r.json()).then(d => { const remotas = (d && d.dias_pago) ? d.dias_pago : {}; opcionesDiaPagoManual = { Semanal: (remotas.Semanal && remotas.Semanal.length) ? remotas.Semanal : opcionesDiaPagoManualFallback.Semanal, Quincenal: (remotas.Quincenal && remotas.Quincenal.length) ? remotas.Quincenal : opcionesDiaPagoManualFallback.Quincenal, Mensual: (remotas.Mensual && remotas.Mensual.length) ? remotas.Mensual : opcionesDiaPagoManualFallback.Mensual }; actualizarOpcionesDiaPagoManualCredito(); }).catch(() => { opcionesDiaPagoManual = JSON.parse(JSON.stringify(opcionesDiaPagoManualFallback)); actualizarOpcionesDiaPagoManualCredito(); }); });
 </script>
 {% endblock %}
+
+
+
+
+
 

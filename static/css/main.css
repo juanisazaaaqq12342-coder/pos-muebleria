@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap');
 
 :root {
     --primary: #0f172a;
@@ -917,5 +917,511 @@ small {
     #modalPago .modal-body {
         max-height: calc(100vh - 210px);
         padding-right: 0.8rem;
+    }
+}
+
+/* ==============================
+   RESPONSIVE ENHANCEMENTS
+============================== */
+.page-header-bar {
+    gap: 1rem;
+}
+
+.page-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.clients-row-actions,
+.cuota-action-group {
+    flex-wrap: wrap;
+}
+
+.cobranzas-page {
+    max-width: 100%;
+}
+
+.cobranzas-summary-card .card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.25rem;
+}
+
+.cobranzas-summary-card .display-6 {
+    line-height: 1;
+    margin-bottom: 0.15rem;
+}
+
+.cobranzas-week-preview-card,
+.cobranzas-table-card {
+    overflow: hidden;
+}
+
+.cobranzas-week-preview-item {
+    padding: 0.85rem !important;
+}
+
+.cobranzas-chip {
+    min-height: 40px;
+    padding-inline: 1rem;
+}
+
+.cobranzas-filter-form {
+    display: grid;
+    grid-template-columns: minmax(190px, 1.35fr) minmax(170px, 1fr) minmax(180px, 1fr) auto auto;
+    align-items: center;
+    gap: 0.65rem;
+    border-radius: 1.5rem !important;
+    padding: 0.75rem 0.85rem !important;
+}
+
+.cobranzas-filter-control {
+    min-width: 0;
+    width: 100%;
+    min-height: 42px;
+    border: 1px solid #dbe3ee !important;
+    background: #f8fafc !important;
+    border-radius: 999px !important;
+    padding: 0.58rem 0.95rem !important;
+    box-shadow: none !important;
+}
+
+.cobranzas-filter-control:focus {
+    border-color: rgba(14, 165, 233, 0.45) !important;
+    box-shadow: 0 0 0 0.18rem rgba(14, 165, 233, 0.12) !important;
+}
+
+.cobranzas-filter-search::placeholder {
+    color: #94a3b8;
+}
+
+.cobranzas-filter-submit,
+.cobranzas-filter-reset {
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+.cobranzas-table-actions {
+    flex-wrap: wrap;
+}
+
+.cobranzas-table-actions > * {
+    flex: 0 0 auto;
+}
+
+.cobranzas-main-table td,
+.cobranzas-latest-table td {
+    vertical-align: middle;
+}
+
+.cobranzas-section-title {
+    line-height: 1.2;
+}
+
+.table-responsive {
+    -webkit-overflow-scrolling: touch;
+}
+
+.modal-dialog {
+    margin: 0.9rem auto;
+}
+
+#topNavMenu {
+    align-items: stretch;
+}
+
+@media (max-width: 1199.98px) {
+    .topnav-search-item {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .topnav-global-search {
+        width: 100%;
+    }
+
+    .topnav-dropdown {
+        min-width: 0;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .topnav {
+        padding-inline: 0.5rem;
+        min-height: var(--topnav-height);
+        height: auto;
+    }
+
+    .topnav-brand {
+        max-width: calc(100% - 84px);
+        gap: 0.7rem;
+        padding-left: 0.25rem !important;
+    }
+
+    .topnav .brand-logo-muebleria {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+    }
+
+    .topnav .brand-copy .fs-4 {
+        font-size: 1rem !important;
+    }
+
+    .topnav .brand-copy .text-muted {
+        font-size: 0.62rem !important;
+    }
+
+    .topnav-collapse-panel {
+        margin: 0.65rem 0 0.3rem;
+        padding: 0.8rem;
+        border-radius: 1.25rem;
+        background: linear-gradient(180deg, rgba(11, 31, 58, 0.98) 0%, rgba(18, 58, 109, 0.98) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: 0 18px 36px -18px rgba(0, 0, 0, 0.55);
+        max-height: calc(100vh - 88px);
+        overflow-y: auto;
+    }
+
+    .topnav-primary-links,
+    .topnav-user-nav {
+        width: 100%;
+        gap: 0.45rem;
+    }
+
+    .topnav-primary-links .nav-item,
+    .topnav-primary-links .dropdown,
+    .topnav-user-nav .nav-item {
+        width: 100%;
+    }
+
+    .topnav-link {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .topnav-search-item {
+        margin: 0.2rem 0 0.35rem;
+    }
+
+    .topnav-global-search {
+        width: 100%;
+    }
+
+    .topnav-dropdown {
+        width: 100%;
+        margin-top: 0.5rem;
+    }
+
+    .topnav-user-nav {
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        margin-top: 0.2rem;
+        padding-top: 0.7rem;
+        align-items: stretch !important;
+    }
+
+    .topnav .user-profile-badge {
+        width: 100%;
+        justify-content: space-between;
+        padding: 0.75rem 0.95rem !important;
+    }
+
+    .topnav .btn-logout-minimal {
+        width: 100%;
+        height: 44px;
+        border-radius: 999px;
+    }
+
+    .main-content {
+        margin-top: 72px;
+        padding: 0.9rem 0.75rem 1.25rem;
+    }
+
+    .global-search-form {
+        flex-wrap: wrap;
+        border-radius: 1rem;
+        padding: 0.7rem;
+    }
+
+    .global-search-input,
+    .global-search-select,
+    .global-search-btn {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .global-search-select {
+        border-left: none;
+        border-top: 1px solid #e5eaf1;
+        border-radius: 0.75rem;
+        background: #f8fafc;
+        padding-block: 0.7rem;
+    }
+
+    .global-search-btn {
+        padding-block: 0.75rem;
+    }
+
+    .pos-catalog-column {
+        border-right: 0 !important;
+        padding-bottom: 0 !important;
+    }
+
+    .pos-product-grid {
+        max-height: none !important;
+        padding-right: 0 !important;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .page-header-bar {
+        align-items: flex-start !important;
+    }
+
+    .page-header-actions {
+        width: 100%;
+    }
+
+    .page-header-actions > .btn,
+    .page-header-actions > a {
+        flex: 1 1 220px;
+    }
+
+    .btn-group {
+        flex-wrap: wrap;
+    }
+
+    .btn-group > .btn {
+        flex: 1 1 170px;
+    }
+
+    .clients-row-actions,
+    .cuota-action-group {
+        justify-content: stretch !important;
+    }
+
+    .clients-row-actions > *,
+    .cuota-action-group > * {
+        flex: 1 1 140px;
+    }
+
+    .cobranzas-summary-grid {
+        margin-bottom: 1rem !important;
+    }
+
+    .cobranzas-summary-card .card-body {
+        text-align: left !important;
+        padding: 1rem !important;
+    }
+
+    .cobranzas-week-preview-header {
+        align-items: flex-start !important;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .cobranzas-filters {
+        align-items: stretch !important;
+    }
+
+    .cobranzas-filter-chips,
+    .cobranzas-filter-form {
+        width: 100%;
+    }
+
+    .cobranzas-filter-chips {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 0.15rem;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .cobranzas-chip {
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+
+    .cobranzas-filter-form {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        padding: 0.85rem 0.95rem !important;
+        border-radius: 1.1rem !important;
+        gap: 0.75rem !important;
+    }
+
+    .cobranzas-filter-search,
+    .cobranzas-filter-select,
+    .cobranzas-filter-submit,
+    .cobranzas-filter-reset {
+        width: 100%;
+        min-width: 0 !important;
+    }
+
+    .cobranzas-filter-submit,
+    .cobranzas-filter-reset {
+        border-radius: 0.95rem !important;
+    }
+
+    .card-body,
+    .card-header {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .table {
+        font-size: 0.84rem;
+    }
+
+    .table > :not(caption) > * > * {
+        padding: 0.65rem 0.55rem;
+    }
+
+    .cobranzas-table-actions {
+        justify-content: center;
+    }
+
+    .cobranzas-table-actions > * {
+        flex: 1 1 110px;
+    }
+
+    .modal-dialog {
+        margin: 0.7rem;
+    }
+
+    .modal-content {
+        border-radius: 1.25rem;
+    }
+
+    #modalPago .modal-content {
+        max-height: calc(100vh - 1.4rem);
+    }
+
+    #modalPago .modal-body {
+        max-height: calc(100vh - 220px);
+        padding-right: 0.75rem;
+    }
+
+    .toast-container {
+        inset: auto 0.75rem 0.75rem 0.75rem;
+        padding: 0 !important;
+    }
+
+    .toast-container .toast {
+        width: 100%;
+    }
+
+    .pos-top-toolbar,
+    .clients-header,
+    .cliente-detalle-header,
+    .cobranzas-header {
+        margin-bottom: 1.25rem !important;
+    }
+
+    .client-history-item {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 0.65rem;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .cobranzas-page .table-responsive {
+        border-radius: 0.95rem;
+    }
+
+    .cobranzas-filter-form {
+        grid-template-columns: 1fr;
+        border-radius: 1rem !important;
+    }
+
+    .cobranzas-summary-card .display-6 {
+        font-size: 1.7rem;
+    }
+
+    .cobranzas-chip {
+        min-height: 38px;
+        padding-inline: 0.9rem;
+    }
+
+    .cobranzas-table-actions > * {
+        flex: 1 1 100%;
+    }
+
+    .cobranzas-filter-submit,
+    .cobranzas-filter-reset {
+        width: 100%;
+    }
+
+    .cobranzas-filter-submit i {
+        margin-right: 0.35rem;
+    }
+
+    .main-content {
+        padding: 0.8rem 0.65rem 1.1rem;
+    }
+
+    h2 {
+        font-size: 1.85rem;
+    }
+
+    .display-6 {
+        font-size: 1.9rem;
+    }
+
+    .fs-1,
+    .pos-summary-total {
+        font-size: 2rem !important;
+    }
+
+    .topnav-brand {
+        max-width: calc(100% - 72px);
+    }
+
+    .topnav .brand-copy .text-muted {
+        display: none;
+    }
+
+    .topnav .brand-logo-muebleria {
+        width: 34px;
+        height: 34px;
+    }
+
+    .global-search-shell {
+        margin-bottom: 0.85rem;
+    }
+
+    .global-search-form {
+        padding: 0.65rem;
+    }
+
+    .glass-panel,
+    .card {
+        border-radius: 1.1rem;
+    }
+
+    .pos-categories-sticky {
+        position: static !important;
+    }
+
+    .pos-category-btn {
+        white-space: nowrap;
+    }
+
+    .pos-cart-column .glass-panel {
+        min-height: auto !important;
+    }
+
+    .pos-success-banner {
+        align-items: flex-start !important;
+    }
+
+    .pos-success-banner .d-flex.gap-2 {
+        width: 100%;
+        flex-wrap: wrap;
     }
 }

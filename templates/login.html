@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 
 <head>
@@ -114,6 +114,54 @@
       margin-bottom: 0.9rem;
       box-shadow: 0 16px 36px rgba(0, 0, 0, 0.18);
     }
+    @media (max-width: 576px) {
+      body {
+        height: auto;
+        min-height: 100vh;
+        align-items: stretch;
+        padding: 1rem 0.75rem;
+        background-attachment: scroll;
+      }
+
+      .login-container {
+        max-width: 100%;
+        padding: 0.35rem;
+        display: flex;
+        align-items: center;
+        min-height: calc(100vh - 2rem);
+      }
+
+      .login-card {
+        width: 100%;
+        padding: 2rem 1.25rem;
+        border-radius: 1.5rem;
+      }
+
+      .brand-accent {
+        font-size: 1.9rem;
+      }
+
+      .logo-login-muebleria {
+        width: 72px;
+        height: 72px;
+        border-radius: 18px;
+      }
+
+      .password-toggle-btn {
+        width: 44px;
+        height: 44px;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .login-card {
+        padding: 1.65rem 1rem;
+      }
+
+      .brand-accent {
+        font-size: 1.7rem;
+      }
+    }
   </style>
 </head>
 
@@ -123,7 +171,7 @@
       <div class="text-center mb-5">
         <img src="{{ url_for('static', filename=brand_logo_static, v=brand_logo_version) }}" alt="Logo JL Muebleria" class="logo-login-muebleria">
         <div class="brand-accent">{{ configuracion.nombre_empresa }}</div>
-        <div class="text-white-50 small text-uppercase tracking-widest fw-bold">Gestión de Inventario y Ventas</div>
+        <div class="text-white-50 small text-uppercase tracking-widest fw-bold">GestiÃ³n de Inventario y Ventas</div>
       </div>
 
       {% with m=get_flashed_messages(with_categories=true) %}
@@ -145,10 +193,10 @@
         </div>
 
         <div class="mb-5">
-          <label class="form-label text-white-50 mb-2">Contraseña</label>
+          <label class="form-label text-white-50 mb-2">ContraseÃ±a</label>
           <div class="input-group-custom d-flex align-items-center">
             <i class="bi bi-lock h5 m-0"></i>
-            <input id="passwordInput" type="password" name="password" class="form-control" placeholder="••••••••" required>
+            <input id="passwordInput" type="password" name="password" class="form-control" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required>
             <button id="togglePasswordBtn" type="button" class="password-toggle-btn" aria-label="Mostrar clave" aria-pressed="false">
               <i id="togglePasswordIcon" class="bi bi-eye"></i>
             </button>
@@ -156,7 +204,7 @@
         </div>
 
         <button type="submit" class="btn btn-primary w-100 py-3 fw-bold fs-5 mb-4">
-          INICIAR SESIÓN
+          INICIAR SESIÃ“N
         </button>
 
         <div class="text-center">
@@ -183,3 +231,4 @@
 </body>
 
 </html>
+

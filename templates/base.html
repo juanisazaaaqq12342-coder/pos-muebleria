@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 
 <head>
@@ -19,13 +19,13 @@
 <body>
 
   <!-- TOP NAVBAR -->
-  <nav class="topnav navbar navbar-expand-md shadow-sm">
+  <nav class="topnav navbar navbar-expand-lg shadow-sm">
     <!-- Brand -->
     <a class="topnav-brand navbar-brand d-flex align-items-center gap-3 ps-4" href="{{ url_for('index') }}">
       <div class="brand-icon-wrapper">
         <img src="{{ url_for('static', filename=brand_logo_static, v=brand_logo_version) }}" alt="Logo JL Muebleria" class="brand-logo-muebleria">
       </div>
-      <div class="d-flex flex-column lh-1">
+      <div class="d-flex flex-column lh-1 brand-copy">
         <span class="fs-4 fw-bold text-dark" style="font-family: 'Playfair Display', serif; letter-spacing: -0.5px;">{{ configuracion.nombre_empresa }}</span>
         <span class="text-muted text-uppercase fw-bold tracking-widest" style="font-size: 0.72rem;">Luxury Suite</span>
       </div>
@@ -37,10 +37,10 @@
       <i class="bi bi-list fs-4 text-dark"></i>
     </button>
 
-    <div class="collapse navbar-collapse" id="topNavMenu">
+    <div class="collapse navbar-collapse topnav-collapse-panel" id="topNavMenu">
 
       <!-- Main links -->
-      <ul class="navbar-nav me-auto gap-0 ms-lg-4">
+      <ul class="navbar-nav me-auto gap-0 ms-lg-4 topnav-primary-links">
         {% if session['rol'] in ['admin', 'vendedor'] %}
         <li class="nav-item">
           <a href="{{ url_for('punto_venta') }}"
@@ -119,13 +119,13 @@
         <li class="nav-item dropdown">
           <a class="nav-link topnav-link dropdown-toggle {% if request.endpoint in ['admin','sedes','usuarios','clientes','caja','reportes','admin_configuracion'] %}active{% endif %}"
             href="#" data-bs-toggle="dropdown">
-            <i class="bi bi-shield-lock"></i> Gestión Administrativa
+            <i class="bi bi-shield-lock"></i> GestiÃ³n Administrativa
           </a>
           <ul class="dropdown-menu topnav-dropdown shadow-xl border-0 mt-2 p-2">
             <li><h6 class="dropdown-header text-uppercase tracking-widest small opacity-50 mb-1">Operaciones</h6></li>
             <li><a class="dropdown-item rounded-3" href="{{ url_for('sedes') }}"><i class="bi bi-building me-2 text-accent"></i>Sucursales</a></li>
-            <li><a class="dropdown-item rounded-3" href="{{ url_for('logistica') }}"><i class="bi bi-truck me-2 text-accent"></i>Despachos Logísticos</a></li>
-            <li><a class="dropdown-item rounded-3" href="{{ url_for('admin') }}"><i class="bi bi-box-seam me-2 text-accent"></i>Catálogo & Stock</a></li>
+            <li><a class="dropdown-item rounded-3" href="{{ url_for('logistica') }}"><i class="bi bi-truck me-2 text-accent"></i>Despachos LogÃ­sticos</a></li>
+            <li><a class="dropdown-item rounded-3" href="{{ url_for('admin') }}"><i class="bi bi-box-seam me-2 text-accent"></i>CatÃ¡logo & Stock</a></li>
             
             <li><hr class="dropdown-divider opacity-10"></li>
             <li><h6 class="dropdown-header text-uppercase tracking-widest small opacity-50 mb-1">Finanzas & Datos</h6></li>
@@ -146,7 +146,7 @@
         {% endif %}
       </ul>
 
-      <ul class="navbar-nav ms-auto align-items-center gap-1 pe-2">
+      <ul class="navbar-nav ms-auto align-items-center gap-1 pe-2 topnav-user-nav">
         <li class="nav-item">
           <div class="user-profile-badge d-flex align-items-center gap-3 px-3 py-1">
             <div class="lh-1 text-end d-none d-lg-block">
@@ -159,7 +159,7 @@
           </div>
         </li>
         <li class="nav-item ms-2">
-          <a href="{{ url_for('logout') }}" class="btn-logout-minimal" title="Cerrar Sesión">
+          <a href="{{ url_for('logout') }}" class="btn-logout-minimal" title="Cerrar SesiÃ³n">
             <i class="bi bi-power"></i>
           </a>
         </li>
@@ -290,13 +290,13 @@
         return false;
       }
 
-      if ((q.startsWith("cartera:") || q.startsWith("credito:") || q.startsWith("crédito:")) && (isAdmin || isCobrador)) {
+      if ((q.startsWith("cartera:") || q.startsWith("credito:") || q.startsWith("crÃ©dito:")) && (isAdmin || isCobrador)) {
         const term = query.substring(query.indexOf(":") + 1).trim();
         window.location.href = "{{ url_for('cobranzas') }}" + "?filtro=todos&q=" + encodeURIComponent(term || query);
         return false;
       }
 
-      // Navegación por módulos exactos
+      // NavegaciÃ³n por mÃ³dulos exactos
       if (["clientes", "cliente"].includes(q) && isAdmin) {
         window.location.href = "{{ url_for('clientes') }}";
         return false;
@@ -305,7 +305,7 @@
         window.location.href = "{{ url_for('historial_ventas') }}";
         return false;
       }
-      if (["cartera", "cobranzas", "credito", "crédito", "cuotas"].includes(q) && (isAdmin || isCobrador)) {
+      if (["cartera", "cobranzas", "credito", "crÃ©dito", "cuotas"].includes(q) && (isAdmin || isCobrador)) {
         window.location.href = "{{ url_for('cobranzas') }}?filtro=todos";
         return false;
       }
@@ -314,7 +314,7 @@
         return false;
       }
 
-      // Por defecto: búsqueda de producto en POS (ej: "colchon matrimonial")
+      // Por defecto: bÃºsqueda de producto en POS (ej: "colchon matrimonial")
       if (isBodega) {
         window.location.href = "{{ url_for('admin') }}" + "?q=" + encodeURIComponent(query);
       } else {
@@ -477,3 +477,8 @@
 </body>
 
 </html>
+
+
+
+
+

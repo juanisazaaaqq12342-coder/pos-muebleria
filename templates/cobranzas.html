@@ -1,14 +1,14 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block content %}
-<div class="animate-slide-in">
+<div class="animate-slide-in cobranzas-page">
 
   <!-- Encabezado -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="d-flex justify-content-between align-items-center mb-4 page-header-bar cobranzas-header">
     <div>
       <h2 class="fw-bold m-0 text-dark" style="font-family:'Playfair Display',serif;">
         <i class="bi bi-cash-coin text-accent me-2"></i>Cobranzas
       </h2>
-      <p class="text-muted small m-0 text-uppercase">Cobros del dia · Cuotas vencidas · Plan de pagos</p>
+      <p class="text-muted small m-0 text-uppercase">Cobros del dia - Cuotas vencidas - Plan de pagos</p>
     </div>
     <a href="{{ url_for('cobranzas') }}" class="btn btn-outline-secondary rounded-pill px-4">
       <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
@@ -16,9 +16,9 @@
   </div>
 
   <!-- Tarjetas resumen -->
-  <div class="row g-3 mb-4">
+  <div class="row g-3 mb-4 cobranzas-summary-grid">
     <div class="col-6 col-md-3">
-      <div class="card border-0 shadow-sm rounded-4 bg-warning bg-opacity-10 border-warning h-100">
+      <div class="card border-0 shadow-sm rounded-4 bg-warning bg-opacity-10 border-warning h-100 cobranzas-summary-card">
         <div class="card-body text-center p-3">
           <div class="text-warning fw-bold small text-uppercase">Cuotas Hoy</div>
           <div class="display-6 fw-bold text-warning">{{ cuotas_hoy|length }}</div>
@@ -27,7 +27,7 @@
       </div>
     </div>
     <div class="col-6 col-md-3">
-      <div class="card border-0 shadow-sm rounded-4 bg-danger bg-opacity-10 h-100">
+      <div class="card border-0 shadow-sm rounded-4 bg-danger bg-opacity-10 h-100 cobranzas-summary-card">
         <div class="card-body text-center p-3">
           <div class="text-danger fw-bold small text-uppercase">Vencidas</div>
           <div class="display-6 fw-bold text-danger">{{ cuotas_vencidas|length }}</div>
@@ -36,7 +36,7 @@
       </div>
     </div>
     <div class="col-6 col-md-3">
-      <div class="card border-0 shadow-sm rounded-4 bg-success bg-opacity-10 h-100">
+      <div class="card border-0 shadow-sm rounded-4 bg-success bg-opacity-10 h-100 cobranzas-summary-card">
         <div class="card-body text-center p-3">
           <div class="text-success fw-bold small text-uppercase">Pagos Hoy</div>
           <div class="display-6 fw-bold text-success">${{ "{:,.0f}".format(total_pagos_hoy) }}</div>
@@ -45,7 +45,7 @@
       </div>
     </div>
     <div class="col-6 col-md-3">
-      <div class="card border-0 shadow-sm rounded-4 bg-info bg-opacity-10 h-100">
+      <div class="card border-0 shadow-sm rounded-4 bg-info bg-opacity-10 h-100 cobranzas-summary-card">
         <div class="card-body text-center p-3">
           <div class="text-info fw-bold small text-uppercase">Proximas (3 dias)</div>
           <div class="display-6 fw-bold text-info">{{ proximas|length }}</div>
@@ -54,7 +54,7 @@
       </div>
     </div>
     <div class="col-6 col-md-3">
-      <div class="card border-0 shadow-sm rounded-4 bg-primary bg-opacity-10 h-100">
+      <div class="card border-0 shadow-sm rounded-4 bg-primary bg-opacity-10 h-100 cobranzas-summary-card">
         <div class="card-body text-center p-3">
           <div class="text-primary fw-bold small text-uppercase">Proximas Semana</div>
           <div class="display-6 fw-bold text-primary">{{ proximas_semana|length }}</div>
@@ -65,18 +65,18 @@
   </div>
 
   {% if proximas_semana_preview %}
-  <div class="card border-0 shadow-sm rounded-4 mb-4">
+  <div class="card border-0 shadow-sm rounded-4 mb-4 cobranzas-week-preview-card">
     <div class="card-body">
-      <div class="d-flex justify-content-between align-items-center mb-2">
+      <div class="d-flex justify-content-between align-items-center mb-2 cobranzas-week-preview-header">
         <h6 class="fw-bold m-0"><i class="bi bi-bell me-2 text-primary"></i>Creditos que vencen en la semana</h6>
         <span class="badge bg-light text-dark border">{{ proximas_semana|length }} pendientes</span>
       </div>
       <div class="row g-2">
         {% for cuota in proximas_semana_preview %}
         <div class="col-md-6 col-lg-4">
-          <div class="p-2 rounded-3 border bg-light h-100">
+          <div class="p-2 rounded-3 border bg-light h-100 cobranzas-week-preview-item">
             <div class="fw-bold small">{{ cuota.credito.cliente.nombre if cuota.credito and cuota.credito.cliente else 'Cliente' }}</div>
-            <div class="small text-muted">{{ cuota.credito.codigo if cuota.credito else '---' }} · Cuota #{{ cuota.numero_cuota }}</div>
+            <div class="small text-muted">{{ cuota.credito.codigo if cuota.credito else '---' }} - Cuota #{{ cuota.numero_cuota }}</div>
             <div class="small text-muted">Vence: {{ cuota.fecha_vencimiento.strftime('%d/%m/%Y') }}</div>
             <div class="fw-bold text-danger">${{ "{:,.0f}".format(cuota.saldo_pendiente or 0) }}</div>
           </div>
@@ -88,23 +88,23 @@
   {% endif %}
 
   <!-- Filtros -->
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
-    <div class="d-flex gap-2 flex-wrap">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3 cobranzas-filters">
+    <div class="d-flex gap-2 flex-wrap cobranzas-filter-chips">
       {% set filtros = [('hoy','Hoy','warning'),('vencidas','Vencidas','danger'),('proximas','Proximas','info'),('semana','Semana','primary'),('activos','Todos Activos','primary'),('pagados','Pagados','success'),('todos','Historial Completo','secondary')] %}
       {% for f,label,color in filtros %}
       <a href="{{ url_for('cobranzas', filtro=f) }}"
-         class="btn btn-sm rounded-pill fw-bold {{ 'btn-' ~ color if filtro_activo==f else 'btn-outline-' ~ color }}">
+         class="btn btn-sm rounded-pill fw-bold cobranzas-chip {{ 'btn-' ~ color if filtro_activo==f else 'btn-outline-' ~ color }}">
         {{ label }}
       </a>
       {% endfor %}
     </div>
 
     <!-- Filtros de cliente y credito -->
-    <form method="GET" action="{{ url_for('cobranzas') }}" class="d-flex gap-2 align-items-center bg-white p-2 rounded-pill shadow-sm border">
+    <form method="GET" action="{{ url_for('cobranzas') }}" class="bg-white p-2 rounded-pill shadow-sm border cobranzas-filter-form">
       <input type="hidden" name="filtro" value="todos">
-      <input type="text" id="clienteSearchLocal" name="q" value="{{ search_q or '' }}" class="form-control form-control-sm border-0 bg-transparent"
-             placeholder="Buscar cliente..." style="min-width: 160px;">
-      <select name="cliente_id" class="form-select form-select-sm border-0 bg-transparent fw-bold" style="min-width: 150px;">
+      <input type="text" id="clienteSearchLocal" name="q" value="{{ search_q or '' }}" class="form-control form-control-sm cobranzas-filter-control cobranzas-filter-search"
+             placeholder="Buscar cliente...">
+      <select name="cliente_id" class="form-select form-select-sm fw-bold cobranzas-filter-control cobranzas-filter-select">
         <option value="">Todos los Clientes</option>
         {% for c in clientes_lista %}
         <option value="{{ c.id }}"
@@ -114,24 +114,23 @@
         </option>
         {% endfor %}
       </select>
-      <div class="vr"></div>
-      <select name="credito_id" class="form-select form-select-sm border-0 bg-transparent fw-bold" style="min-width: 160px;">
-        <option value="">Todos los Créditos</option>
+      <select name="credito_id" class="form-select form-select-sm fw-bold cobranzas-filter-control cobranzas-filter-select">
+        <option value="">Todos los Creditos</option>
         {% for cr in creditos %}
         <option value="{{ cr.id }}" {% if credito_id_f == cr.id|string %}selected{% endif %}>{{ cr.codigo }} - {{ cr.cliente.nombre }}</option>
         {% endfor %}
       </select>
-      <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm"><i class="bi bi-search"></i> Buscar</button>
+      <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm cobranzas-filter-submit"><i class="bi bi-search"></i> Buscar</button>
       {% if cliente_id_f or credito_id_f %}
-      <a href="{{ url_for('cobranzas') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2"><i class="bi bi-x"></i></a>
+      <a href="{{ url_for('cobranzas') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2 cobranzas-filter-reset"><i class="bi bi-x"></i></a>
       {% endif %}
     </form>
   </div>
 
   <!-- Tabla cuotas -->
-  <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
+  <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5 cobranzas-table-card">
     <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
+      <table class="table table-hover align-middle mb-0 cobranzas-main-table">
         <thead class="bg-dark text-white">
           <tr>
             <th class="ps-3 py-3">Cliente</th>
@@ -180,7 +179,7 @@
               </span>
             </td>
             <td class="text-center">
-              <div class="d-flex gap-1 justify-content-center">
+              <div class="d-flex gap-1 justify-content-center cobranzas-table-actions">
                 {% if estado not in ['Pagada','Cancelada'] %}
                 <button class="btn btn-sm btn-primary rounded-pill px-3 fw-bold"
                   onclick="abrirPago({{ cuota.id }},'{{ c.nombre }}','{{ cuota.credito.codigo }}',{{ cuota.numero_cuota }},{{ cuota.valor_cuota }},{{ cuota.valor_pagado or 0 }},{{ cuota.saldo_pendiente }},{{ cuota.credito.saldo_actual }})">
@@ -209,10 +208,10 @@
   </div>
 
   <!-- Ultimos Pagos -->
-  <h4 class="fw-bold mb-3"><i class="bi bi-clock-history me-2 text-primary"></i>Ultimos Pagos Registrados</h4>
-  <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+  <h4 class="fw-bold mb-3 cobranzas-section-title"><i class="bi bi-clock-history me-2 text-primary"></i>Ultimos Pagos Registrados</h4>
+  <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 cobranzas-table-card">
     <div class="table-responsive">
-      <table class="table align-middle mb-0">
+      <table class="table align-middle mb-0 cobranzas-latest-table">
         <thead class="bg-light text-muted small text-uppercase">
           <tr>
             <th class="ps-3">Fecha</th>
@@ -384,3 +383,12 @@ function abrirPago(id, cliente, codigo, ncuota, valor, pagado, saldo, saldo_cred
 }
 </script>
 {% endblock %}
+
+
+
+
+
+
+
+
+
