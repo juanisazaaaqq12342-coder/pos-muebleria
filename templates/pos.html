@@ -19,7 +19,7 @@
 </div>
 {% endif %}
 
-<div class="row h-100 g-3">
+<div class="row h-100 g-3 pos-layout-row">
   <!-- Izquierda: Catálogo y Filtros -->
   <div class="col-lg-8 col-md-7 border-end d-flex flex-column h-100 pb-3 pos-catalog-column">
     
@@ -128,11 +128,11 @@
   </div>
 
   <!-- Derecha: Resumen de Compra -->
-  <div class="col-lg-4 col-md-5 h-100 pos-cart-column">
-    <div class="glass-panel h-100 d-flex flex-column border-0 shadow-xl overflow-hidden animate-slide-in">
+  <div class="col-lg-4 col-md-5 h-100 d-flex pos-cart-column">
+    <div class="glass-panel h-100 d-flex flex-column border-0 shadow-xl overflow-hidden animate-slide-in pos-cart-panel">
       
       <!-- Encabezado Cliente -->
-      <div class="p-4 bg-dark text-white shadow-sm">
+      <div class="p-4 bg-dark text-white shadow-sm pos-cart-header">
         <div class="d-flex justify-content-between align-items-center">
             <div>
               <p class="text-accent small text-uppercase tracking-widest mb-1 fw-bold" style="font-size: 0.65rem;">Orden Actual</p>
@@ -159,16 +159,16 @@
       </div>
 
       <!-- Área de Ítems -->
-      <div class="flex-grow-1 overflow-auto bg-white p-3 custom-scrollbar">
+      <div class="flex-grow-1 overflow-auto bg-white p-3 custom-scrollbar pos-cart-items{% if not items_agrupados %} is-empty{% endif %}">
         {% if not items_agrupados %}
-        <div class="h-100 d-flex flex-column align-items-center justify-content-center text-muted opacity-25">
+        <div class="d-flex flex-column align-items-center justify-content-center text-muted opacity-25 pos-cart-empty">
           <i class="bi bi-bag-plus display-1 mb-3"></i>
           <h6 class="fw-bold">Esperando selección...</h6>
         </div>
         {% else %}
         <div class="d-flex flex-column gap-3">
           {% for g in items_agrupados %}
-          <div class="card border-0 bg-light p-3 rounded-4 position-relative">
+          <div class="card border-0 bg-light p-3 rounded-4 position-relative pos-cart-item-card">
             <div class="d-flex justify-content-between align-items-start">
               <div class="pe-4">
                 <div class="fw-bold text-dark fs-6">{{ g.cantidad }}x {{ g.nombre }}</div>
@@ -191,9 +191,9 @@
       </div>
 
       <!-- Totales y Pago -->
-      <div class="p-4 bg-white border-top">
+      <div class="p-4 bg-white border-top pos-cart-footer">
         {% set total = total_display if total_display is defined else (venta.total if venta else 0) %}
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-4 pos-cart-total-row">
             <div class="text-muted fw-bold small text-uppercase tracking-widest">Total a Pagar</div>
             <div class="fs-1 fw-bolder text-primary pos-summary-total">${{ "{:,.0f}".format(total) }}</div>
         </div>
@@ -205,7 +205,7 @@
             <i class="bi bi-credit-card-2-back me-2"></i> CONTINUAR AL PAGO
           </button>
           
-          <div class="card border-0 bg-light rounded-4 p-3">
+          <div class="card border-0 bg-light rounded-4 p-3 pos-quote-card">
             <div class="d-flex justify-content-between align-items-center mb-2">
               <div class="fw-bold text-dark small text-uppercase tracking-widest">Cotizacion en Cuotas</div>
               <span class="badge text-bg-light border text-muted">Sin venta</span>
@@ -1238,12 +1238,4 @@
     }
 </script>
 {% endblock %}
-
-
-
-
-
-
-
-
 

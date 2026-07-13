@@ -827,6 +827,71 @@ small {
     box-shadow: 0 10px 20px -10px rgba(201, 151, 43, 0.95);
 }
 
+.pos-layout-row,
+.pos-catalog-column,
+.pos-cart-column,
+.pos-cart-panel,
+.pos-product-grid,
+.pos-cart-items {
+    min-height: 0;
+}
+
+.pos-layout-row {
+    align-items: stretch;
+}
+
+.pos-cart-column {
+    display: flex;
+}
+
+.pos-cart-panel {
+    flex: 1 1 auto;
+    min-height: calc(100vh - 180px);
+}
+
+.pos-cart-header,
+.pos-cart-footer {
+    flex-shrink: 0;
+}
+
+.pos-cart-items {
+    flex: 0 1 clamp(12rem, 28vh, 22rem);
+    min-height: 11rem;
+    max-height: clamp(12rem, 30vh, 24rem);
+    overscroll-behavior: contain;
+}
+
+.pos-cart-items.is-empty {
+    flex-basis: 9rem;
+    min-height: 8.5rem;
+    max-height: 10rem;
+}
+
+.pos-cart-empty {
+    min-height: 7rem;
+    text-align: center;
+}
+
+.pos-cart-total-row {
+    gap: 1rem;
+}
+
+.pos-cart-total-row > * {
+    min-width: 0;
+}
+
+.pos-quote-card {
+    overflow: hidden;
+}
+
+.pos-quote-card .form-control,
+.pos-quote-card .form-select {
+    min-height: 46px;
+}
+
+.pos-quote-card .row {
+    --bs-gutter-y: 0.65rem;
+}
 /* ==============================
    POS MODAL PAGO (SCROLL FIX)
 ============================== */
@@ -1050,6 +1115,7 @@ small {
     }
 }
 
+
 @media (max-width: 991.98px) {
     .topnav {
         padding-inline: 0.5rem;
@@ -1175,6 +1241,67 @@ small {
     .pos-product-grid {
         max-height: none !important;
         padding-right: 0 !important;
+    }
+}
+
+@media (max-width: 1199.98px) {
+    .pos-cart-total-row {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 0.6rem;
+    }
+
+    .pos-summary-total {
+        font-size: clamp(2rem, 4vw, 2.5rem) !important;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .pos-layout-row {
+        height: auto !important;
+    }
+
+    .pos-catalog-column,
+    .pos-cart-column,
+    .pos-cart-panel {
+        height: auto !important;
+    }
+
+    .pos-cart-panel {
+        min-height: auto;
+    }
+
+    .pos-cart-items {
+        max-height: 34vh;
+        min-height: 8.5rem;
+    }
+
+    .pos-cart-items.is-empty {
+        max-height: 8rem;
+        min-height: 7rem;
+    }
+
+    .pos-cart-footer {
+        padding: 1.2rem !important;
+    }
+
+    .pos-cart-total-row {
+        flex-direction: column;
+        align-items: flex-start !important;
+        margin-bottom: 1rem !important;
+    }
+
+    .pos-summary-total {
+        line-height: 1;
+    }
+
+    .pos-quote-card .row > [class*="col-"] {
+        flex: 0 0 100%;
+        width: 100%;
+    }
+
+    .pos-quote-card .text-center {
+        text-align: left !important;
     }
 }
 
@@ -1322,6 +1449,62 @@ small {
         margin-bottom: 1.25rem !important;
     }
 
+    .pos-cart-header {
+        padding: 1.1rem !important;
+    }
+
+    .pos-cart-header .d-flex {
+        align-items: flex-start !important;
+        gap: 0.85rem;
+    }
+
+    .pos-cart-header .small.mt-2 {
+        display: grid;
+        gap: 0.35rem;
+    }
+
+    .pos-cart-items {
+        max-height: 32vh;
+        min-height: 7.5rem;
+        padding: 1rem !important;
+    }
+
+    .pos-cart-items.is-empty {
+        min-height: 6.75rem;
+        max-height: 7.5rem;
+    }
+
+    .pos-cart-item-card {
+        padding: 0.9rem !important;
+    }
+
+    .pos-cart-item-card .d-flex {
+        gap: 0.75rem;
+    }
+
+    .pos-cart-item-card .pe-4 {
+        padding-right: 0 !important;
+        min-width: 0;
+    }
+
+    .pos-cart-item-card .fs-5 {
+        font-size: 1.1rem !important;
+    }
+
+    .pos-cart-footer {
+        padding: 1rem !important;
+    }
+
+    .pos-cart-footer .btn-lg {
+        padding-top: 0.95rem !important;
+        padding-bottom: 0.95rem !important;
+        font-size: 1rem;
+    }
+
+    .pos-quote-card {
+        padding: 1rem !important;
+    }
+
     .client-history-item {
         flex-direction: column;
         align-items: flex-start !important;
@@ -1416,6 +1599,24 @@ small {
         min-height: auto !important;
     }
 
+    .pos-cart-items {
+        max-height: none;
+        min-height: 6.5rem;
+    }
+
+    .pos-cart-items.is-empty {
+        min-height: 6rem;
+        max-height: 7.25rem;
+    }
+
+    .pos-cart-total-row {
+        gap: 0.65rem;
+    }
+
+    .pos-quote-card {
+        padding: 0.9rem !important;
+    }
+
     .pos-success-banner {
         align-items: flex-start !important;
     }
@@ -1425,3 +1626,4 @@ small {
         flex-wrap: wrap;
     }
 }
+
