@@ -2250,7 +2250,7 @@ def cerrar_cuenta():
                 ref_row.parentesco = ref["parentesco"] or None
                 ref_row.direccion = ref["direccion"] or None
 
-            generar_plan_pagos(nuevo_credito, fecha_inicio_pago, dia_pago_credito, cuota_inicio_sistema)
+            generar_plan_pagos(nuevo_credito, fecha_inicio_pago, dia_pago_credito, 1, saldo_objetivo=int(total_financiado))
             db.session.flush()
             sincronizar_cartera_cliente(v.cliente_id)
 
