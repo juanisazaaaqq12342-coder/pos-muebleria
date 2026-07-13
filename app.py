@@ -3798,28 +3798,38 @@ def caja():
 
     # Sumar pagos de ventas directas y cuotas iniciales de creditos
     for v in ventas:
+        monto_movimiento_venta = 0
+        metodo_movimiento_venta = v.metodo_pago or "---"
+        detalle_movimiento_venta = f"Venta #{v.id}"
+
         if v.metodo_pago == "Credito":
             # La cuota inicial se asume en efectivo por defecto a menos que agreguemos un selector luego,
             # pero tipicamente ingresa en caja fisica.
             credito = Credito.query.filter_by(venta_id=v.id).first()
-            if credito and credito.cuota_inicial:
-                te += credito.cuota_inicial
+            cuota_inicial = int(credito.cuota_inicial or 0) if credito else 0
+            if cuota_inicial > 0:
+                te += cuota_inicial
+                monto_movimiento_venta = cuota_inicial
+                metodo_movimiento_venta = "Credito / Cuota inicial"
+                detalle_movimiento_venta = f"Venta #{v.id} - Cuota inicial"
         else:
             efectivo, tarjeta, transferencia = desglose_pago_venta(v)
             te += efectivo
             td += (tarjeta + transferencia)
+            monto_movimiento_venta = int(efectivo + tarjeta + transferencia)
 
-        movimientos_caja.append({
-            "fecha": v.fecha_cierre or v.fecha_creacion,
-            "tipo": "Venta",
-            "detalle": f"Venta #{v.id}",
-            "sede": v.sede.nombre if v.sede else "Sin sede",
-            "metodo": v.metodo_pago or "---",
-            "responsable": v.vendedor.username if v.vendedor else "---",
-            "monto": int(v.total or 0),
-            "clase_monto": "text-success",
-            "ticket_url": url_for("imprimir_ticket", venta_id=v.id)
-        })
+        if monto_movimiento_venta > 0:
+            movimientos_caja.append({
+                "fecha": v.fecha_cierre or v.fecha_creacion,
+                "tipo": "Venta",
+                "detalle": detalle_movimiento_venta,
+                "sede": v.sede.nombre if v.sede else "Sin sede",
+                "metodo": metodo_movimiento_venta,
+                "responsable": v.vendedor.username if v.vendedor else "---",
+                "monto": monto_movimiento_venta,
+                "clase_monto": "text-success",
+                "ticket_url": url_for("imprimir_ticket", venta_id=v.id)
+            })
 
     # Sumar pagos de cuotas realizados en el modulo de cobranzas
     for a in abonos:
