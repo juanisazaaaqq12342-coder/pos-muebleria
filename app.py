@@ -55,7 +55,7 @@ def cobrador_required(f):
 def inventario_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if session.get("rol") not in ["admin", "bodega"]:
+        if session.get("rol") not in ["admin", "bodega", "vendedor"]:
             flash("Acceso denegado: módulo solo para inventario.", "danger")
             return redirect(url_for("index"))
         return f(*args, **kwargs)
@@ -140,14 +140,22 @@ def load_config():
         
     try:
         g.config = Configuracion.query.first() or Configuracion()
-        # Inyectar sedes para el navbar
-        g.todas_sedes = Sede.query.filter_by(activa=True).all()
+        usuario_sesion = obtener_usuario_actual() if session.get("user_id") else None
+        g.todas_sedes = sedes_visibles_para_usuario(usuario_sesion)
+        if usuario_sesion and usuario_sesion.rol != "admin" and usuario_sesion.sede_id:
+            session["sede_id"] = usuario_sesion.sede_id
         curr_sede_id = session.get("sede_id")
-        if curr_sede_id:
-            s_obj = Sede.query.get(curr_sede_id)
-            g.sede_nombre = s_obj.nombre if s_obj else "Sede Principal"
+        sede_actual = obtener_sede_activa(curr_sede_id)
+        if not sede_actual and g.todas_sedes:
+            sede_actual = g.todas_sedes[0]
+            if sede_actual:
+                session["sede_id"] = sede_actual.id
+        if sede_actual:
+            g.sede_nombre = sede_actual.nombre
+        elif g.todas_sedes:
+            g.sede_nombre = g.todas_sedes[0].nombre
         else:
-            g.sede_nombre = g.todas_sedes[0].nombre if g.todas_sedes else "Sede Principal"
+            g.sede_nombre = "Sede Principal"
     except Exception as e:
         g.config = Configuracion()
         g.todas_sedes = []
@@ -755,11 +763,31 @@ def generar_codigo_credito():
 def obtener_credito_activo_cliente(cliente_id):
     return Credito.query.filter_by(cliente_id=cliente_id, estado="Activo").order_by(Credito.fecha_inicio.asc()).first()
 
-def generar_plan_pagos(credito, fecha_inicio, dia_pago=None, cuota_desde=1):
+def obtener_usuario_actual():
+    user_id = session.get("user_id")
+    return db.session.get(Usuario, user_id) if user_id else None
+
+def obtener_sede_activa(sede_id):
+    return Sede.query.filter_by(id=sede_id, activa=True).first() if sede_id else None
+
+def sedes_visibles_para_usuario(usuario=None):
+    usuario = usuario or obtener_usuario_actual()
+    if usuario and usuario.rol != "admin":
+        sede_usuario = obtener_sede_activa(usuario.sede_id)
+        return [sede_usuario] if sede_usuario else []
+    return Sede.query.filter_by(activa=True).order_by(Sede.nombre.asc()).all()
+
+def usuario_puede_operar_sede(sede_id, usuario=None):
+    usuario = usuario or obtener_usuario_actual()
+    if not usuario or usuario.rol == "admin":
+        return True
+    return bool(usuario.sede_id and int(usuario.sede_id) == int(sede_id))
+
+def generar_plan_pagos(credito, fecha_inicio, dia_pago=None, cuota_desde=1, saldo_objetivo=None):
     """Genera las cuotas pendientes de un credito, incluso si entra ya iniciado."""
     periodicidad = credito.periodicidad
     n_cuotas = max(1, int(credito.numero_cuotas or 1))
-    valor = credito.valor_cuota
+    valor = int(credito.valor_cuota or 0)
     fecha = fecha_inicio
 
     try:
@@ -767,6 +795,7 @@ def generar_plan_pagos(credito, fecha_inicio, dia_pago=None, cuota_desde=1):
     except (TypeError, ValueError):
         cuota_desde = 1
     cuota_desde = max(1, min(cuota_desde, n_cuotas))
+    cuotas_a_generar = (n_cuotas - cuota_desde) + 1
 
     def add_months(base_date, months_to_add):
         mes = base_date.month + months_to_add
@@ -808,7 +837,21 @@ def generar_plan_pagos(credito, fecha_inicio, dia_pago=None, cuota_desde=1):
     except (TypeError, ValueError):
         dia_pago = None
 
-    for i in range(cuota_desde, n_cuotas + 1):
+    valor_ultima_cuota = None
+    if saldo_objetivo is not None:
+        try:
+            saldo_objetivo = int(saldo_objetivo)
+        except (TypeError, ValueError):
+            raise ValueError("El saldo objetivo del plan de pagos no es valido.")
+        saldo_objetivo = max(1, saldo_objetivo)
+        if cuotas_a_generar == 1:
+            valor_ultima_cuota = saldo_objetivo
+        else:
+            valor_ultima_cuota = saldo_objetivo - (valor * (cuotas_a_generar - 1))
+            if valor_ultima_cuota <= 0 or valor_ultima_cuota > valor:
+                raise ValueError("La combinacion de saldo pendiente, cuotas y valor por cuota no permite generar el plan de pagos.")
+
+    for offset, i in enumerate(range(cuota_desde, n_cuotas + 1), start=1):
         if periodicidad == "Semanal":
             if dia_pago is None or dia_pago < 0 or dia_pago > 6:
                 dia_pago = 1
@@ -827,7 +870,7 @@ def generar_plan_pagos(credito, fecha_inicio, dia_pago=None, cuota_desde=1):
                     if candidato > fecha:
                         candidatos.append(candidato)
             fecha = min(candidatos) if candidatos else con_dia_seguro(add_months(fecha.replace(day=1), 1), dias_quincenales[0])
-        else:  # Mensual
+        else:
             if dia_pago is None or dia_pago < 1 or dia_pago > 30:
                 dia_pago = 1
             candidato = con_dia_seguro(fecha, dia_pago)
@@ -835,12 +878,16 @@ def generar_plan_pagos(credito, fecha_inicio, dia_pago=None, cuota_desde=1):
                 candidato = con_dia_seguro(add_months(candidato, 1), dia_pago)
             fecha = candidato
 
+        valor_cuota_plan = valor
+        if saldo_objetivo is not None and offset == cuotas_a_generar:
+            valor_cuota_plan = valor_ultima_cuota
+
         cuota = CuotaCredito(
             credito_id=credito.id,
             numero_cuota=i,
             fecha_vencimiento=fecha,
-            valor_cuota=valor,
-            saldo_pendiente=valor,
+            valor_cuota=valor_cuota_plan,
+            saldo_pendiente=valor_cuota_plan,
             estado="Pendiente"
         )
         db.session.add(cuota)
@@ -2937,34 +2984,41 @@ def crear_credito_manual():
         if credito_activo and int(credito_activo.saldo_actual or 0) > 0 and estado_activo not in {"pagado", "cancelado"}:
             flash(f"El cliente ya tiene un credito activo ({credito_activo.codigo}).", "warning")
             return redirect(return_to or url_for("cliente_historial", cliente_id=cliente.id))
-        monto_total = parse_non_negative_int(request.form.get("monto_total_credito"))
-        cuota_inicial = parse_non_negative_int(request.form.get("cuota_inicial_credito") or 0) or 0
+
+        nombre_producto = (request.form.get("producto_credito") or request.form.get("descripcion_credito") or "").strip()
+        saldo_pendiente = parse_non_negative_int(request.form.get("saldo_pendiente_credito") or request.form.get("monto_total_credito"))
         numero_cuotas = parse_non_negative_int(request.form.get("numero_cuotas_credito")) or 1
         numero_cuotas = max(1, min(numero_cuotas, 120))
         periodicidad_credito = (request.form.get("periodicidad_credito") or "Mensual").title()
         if periodicidad_credito not in ["Semanal", "Quincenal", "Mensual"]:
             periodicidad_credito = "Mensual"
-        cuota_actual_credito = parse_non_negative_int(request.form.get("cuota_actual_credito")) or 1
-        cuota_inicio_sistema = parse_non_negative_int(request.form.get("cuota_inicio_sistema_credito")) or cuota_actual_credito
-        if cuota_actual_credito < 1 or cuota_actual_credito > numero_cuotas:
-            flash("La cuota actual debe estar entre 1 y el total de cuotas del credito.", "warning")
+        valor_cuota = parse_non_negative_int(request.form.get("valor_cuota_credito") or request.form.get("valor_cuota"))
+
+        if not nombre_producto:
+            flash("Debes ingresar el nombre del producto o concepto del credito.", "warning")
             return redirect(return_to or url_for("cliente_historial", cliente_id=cliente.id))
-        if cuota_inicio_sistema < 1 or cuota_inicio_sistema > numero_cuotas:
-            flash("La cuota de inicio en sistema debe estar entre 1 y el total de cuotas del credito.", "warning")
+        if saldo_pendiente is None or saldo_pendiente <= 0:
+            flash("Debes ingresar un saldo pendiente valido para el credito.", "warning")
             return redirect(return_to or url_for("cliente_historial", cliente_id=cliente.id))
-        if cuota_inicio_sistema < cuota_actual_credito:
-            flash("La cuota desde la que inicia el sistema no puede ser menor a la cuota actual reportada.", "warning")
+        if valor_cuota is None or valor_cuota <= 0:
+            flash("Debes ingresar un valor de cuota valido.", "warning")
             return redirect(return_to or url_for("cliente_historial", cliente_id=cliente.id))
-        if monto_total is None or monto_total <= 0:
-            flash("Debes ingresar un monto total valido para el credito.", "warning")
+
+        cobertura_total = int(valor_cuota) * int(numero_cuotas)
+        if cobertura_total < int(saldo_pendiente):
+            flash("El valor de la cuota por el numero de cuotas no cubre el saldo pendiente.", "warning")
             return redirect(return_to or url_for("cliente_historial", cliente_id=cliente.id))
-        if cuota_inicial < 0 or cuota_inicial >= monto_total:
-            flash("La cuota inicial debe ser menor al monto total del credito.", "warning")
-            return redirect(return_to or url_for("cliente_historial", cliente_id=cliente.id))
-        saldo_financiar = max(int(monto_total) - int(cuota_inicial), 0)
-        if saldo_financiar <= 0:
-            flash("El credito debe dejar saldo pendiente para entrar a cartera.", "warning")
-            return redirect(return_to or url_for("cliente_historial", cliente_id=cliente.id))
+
+        valor_ultima_cuota = int(saldo_pendiente)
+        if numero_cuotas > 1:
+            valor_ultima_cuota = int(saldo_pendiente) - (int(valor_cuota) * (int(numero_cuotas) - 1))
+            if valor_ultima_cuota <= 0:
+                flash("Con ese valor de cuota sobran cuotas. Ajusta el numero de cuotas o reduce el valor de la cuota.", "warning")
+                return redirect(return_to or url_for("cliente_historial", cliente_id=cliente.id))
+            if valor_ultima_cuota > int(valor_cuota):
+                flash("El valor de la cuota debe ser suficiente para cubrir el saldo dentro del numero de cuotas indicado.", "warning")
+                return redirect(return_to or url_for("cliente_historial", cliente_id=cliente.id))
+
         conf = Configuracion.query.first() or Configuracion()
         opts_map = opciones_dia_pago_desde_config(conf)
         pares_validos = []
@@ -3000,38 +3054,75 @@ def crear_credito_manual():
             fecha_inicio_pago = datetime.strptime(fecha_inicio_str, "%Y-%m-%d")
         except Exception:
             fecha_inicio_pago = datetime.now()
-        descripcion_credito = (request.form.get("descripcion_credito") or "").strip()
         observaciones_extra = (request.form.get("observaciones_credito") or "").strip()
-        cuotas_pendientes_sistema = (numero_cuotas - cuota_inicio_sistema) + 1
-        if cuotas_pendientes_sistema <= 0:
-            flash("No hay cuotas pendientes para registrar en el sistema con la configuracion indicada.", "warning")
-            return redirect(return_to or url_for("cliente_historial", cliente_id=cliente.id))
-        valor_cuota_calc = int(math.ceil(saldo_financiar / cuotas_pendientes_sistema)) if cuotas_pendientes_sistema > 0 else saldo_financiar
-        nota_credito_manual = descripcion_credito or "Credito manual"
-        venta_manual = Venta(fecha_creacion=fecha_inicio_pago, sede_id=session.get("sede_id"), cliente_id=cliente.id, vendedor_id=session.get("user_id"), estado="credito", estado_entrega="Pendiente", direccion_envio=cliente.direccion, cerrado=True, fecha_cierre=fecha_inicio_pago, metodo_pago="Credito", pago_efectivo=int(cuota_inicial), pago_tarjeta=0, pago_transferencia=0, total=int(monto_total), monto_recibido=int(cuota_inicial), cambio=0, notas=f"{nota_credito_manual} | Credito manual creado desde clientes")
+
+        venta_manual = Venta(
+            fecha_creacion=fecha_inicio_pago,
+            sede_id=session.get("sede_id"),
+            cliente_id=cliente.id,
+            vendedor_id=session.get("user_id"),
+            estado="credito",
+            estado_entrega="Pendiente",
+            direccion_envio=cliente.direccion,
+            cerrado=True,
+            fecha_cierre=fecha_inicio_pago,
+            metodo_pago="Credito",
+            pago_efectivo=0,
+            pago_tarjeta=0,
+            pago_transferencia=0,
+            total=int(saldo_pendiente),
+            monto_recibido=0,
+            cambio=0,
+            notas=f"{nombre_producto} | Credito manual creado desde clientes"
+        )
         db.session.add(venta_manual)
         db.session.flush()
-        cliente.deuda = (cliente.deuda or 0) + int(saldo_financiar)
-        db.session.add(MovimientoCredito(cliente_id=cliente.id, tipo='cargo', monto=int(saldo_financiar), nota=f"{nota_credito_manual} | Venta manual #{venta_manual.id} | CI ${cuota_inicial:,.0f}", usuario_id=session.get("user_id")))
-        encabezado_dia = f"Dia de pago ({periodicidad_credito}): {dia_pago_texto}"
-        observaciones = [encabezado_dia]
-        observaciones.append(f"Cuota actual reportada: {cuota_actual_credito} de {numero_cuotas}")
-        observaciones.append(f"Sistema inicia cobro desde cuota #{cuota_inicio_sistema}")
-        if cuota_actual_credito > 1 or cuota_inicio_sistema > 1:
-            observaciones.append("Credito cargado como cartera ya activa.")
-        if descripcion_credito:
-            observaciones.append(f"Concepto: {descripcion_credito}")
+
+        cliente.deuda = (cliente.deuda or 0) + int(saldo_pendiente)
+        db.session.add(MovimientoCredito(
+            cliente_id=cliente.id,
+            tipo='cargo',
+            monto=int(saldo_pendiente),
+            nota=f"{nombre_producto} | Venta manual #{venta_manual.id} | Saldo ${saldo_pendiente:,.0f}",
+            usuario_id=session.get("user_id")
+        ))
+
+        observaciones = [f"Dia de pago ({periodicidad_credito}): {dia_pago_texto}"]
+        observaciones.append(f"Producto: {nombre_producto}")
+        observaciones.append(f"Saldo pendiente: ${saldo_pendiente:,.0f}")
+        observaciones.append(f"Numero de cuotas: {numero_cuotas}")
+        observaciones.append(f"Valor de cuota: ${valor_cuota:,.0f}")
+        if valor_ultima_cuota != int(valor_cuota):
+            observaciones.append(f"Ultima cuota ajustada a ${valor_ultima_cuota:,.0f}")
         if observaciones_extra:
             observaciones.append(observaciones_extra)
         observaciones.append(f"Credito manual generado desde clientes para {nombre_completo_cliente(cliente)}")
-        nuevo_credito = Credito(codigo=generar_codigo_credito(), fecha_inicio=fecha_inicio_pago, cliente_id=cliente.id, venta_id=venta_manual.id, periodicidad=periodicidad_credito, numero_cuotas=numero_cuotas, monto_total=int(monto_total), cuota_inicial=int(cuota_inicial), saldo_financiar=int(saldo_financiar), porcentaje_interes=0.0, valor_interes=0, total_financiado=int(saldo_financiar), valor_cuota=int(valor_cuota_calc), saldo_actual=int(saldo_financiar), estado="Activo", observaciones="\n".join(observaciones)[:300])
+
+        nuevo_credito = Credito(
+            codigo=generar_codigo_credito(),
+            fecha_inicio=fecha_inicio_pago,
+            cliente_id=cliente.id,
+            venta_id=venta_manual.id,
+            periodicidad=periodicidad_credito,
+            numero_cuotas=numero_cuotas,
+            monto_total=int(saldo_pendiente),
+            cuota_inicial=0,
+            saldo_financiar=int(saldo_pendiente),
+            porcentaje_interes=0.0,
+            valor_interes=0,
+            total_financiado=int(saldo_pendiente),
+            valor_cuota=int(valor_cuota),
+            saldo_actual=int(saldo_pendiente),
+            estado="Activo",
+            observaciones="\n".join(observaciones)[:300]
+        )
         db.session.add(nuevo_credito)
         db.session.flush()
-        generar_plan_pagos(nuevo_credito, fecha_inicio_pago, dia_pago_credito, cuota_inicio_sistema)
+        generar_plan_pagos(nuevo_credito, fecha_inicio_pago, dia_pago_credito, 1, saldo_objetivo=int(saldo_pendiente))
         sincronizar_cartera_cliente(cliente.id)
         db.session.commit()
         try:
-            registrar_auditoria("Credito Manual", f"Cliente {cliente.id} | Credito {nuevo_credito.codigo} | Total ${monto_total:,.0f}")
+            registrar_auditoria("Credito Manual", f"Cliente {cliente.id} | Credito {nuevo_credito.codigo} | Producto {nombre_producto} | Saldo ${saldo_pendiente:,.0f}")
         except Exception:
             pass
         flash(f"Credito manual {nuevo_credito.codigo} creado correctamente para {nombre_completo_cliente(cliente)}.", "success")
@@ -3188,10 +3279,25 @@ def api_devolucion():
 def admin():
     rol_actual = session.get("rol")
     solo_inventario = rol_actual == "bodega"
+    solo_consulta = rol_actual == "vendedor"
+    usuario_actual = obtener_usuario_actual()
+    sedes_visibles = sedes_visibles_para_usuario(usuario_actual)
+    if not sedes_visibles:
+        flash("No hay una sede activa disponible para este usuario.", "warning")
+        return redirect(url_for("index"))
+
+    if rol_actual == "admin":
+        sede_actual = obtener_sede_activa(session.get("sede_id")) or sedes_visibles[0]
+    else:
+        sede_actual = sedes_visibles[0]
+        session["sede_id"] = sede_actual.id
 
     if request.method=="POST": 
         try:
             t=request.form.get("tipo")
+            if solo_consulta:
+                flash("Tu usuario solo puede consultar el inventario de la sede asignada.", "warning")
+                return redirect(url_for("admin"))
             if solo_inventario and t not in {"update_imagen"}:
                 flash("Tu rol de bodega solo puede ajustar existencias y actualizar imagenes de producto.", "warning")
                 return redirect(url_for("admin"))
@@ -3219,9 +3325,8 @@ def admin():
                     imagen_url=imagen_filename
                 )
                 db.session.add(nuevo_p)
-                db.session.flush() # To get the ID
+                db.session.flush()
                 
-                # Create 0 stock entries for all sedes
                 sedes_all = Sede.query.all()
                 for s in sedes_all:
                     db.session.add(InventarioSede(producto_id=nuevo_p.id, sede_id=s.id, cantidad=0))
@@ -3278,7 +3383,6 @@ def admin():
             db.session.rollback()
             flash(f"Error en operacion administrativa: {e}", "danger")
     
-    # Filtrado por categoria
     cat_filtro = request.args.get("categoria_id")
     search_q = (request.args.get("q") or "").strip()
     query_prod = Producto.query.filter_by(is_deleted=False)
@@ -3299,19 +3403,33 @@ def admin():
             )
         )
 
-    sedes_list = Sede.query.all()
+    sedes_panel = Sede.query.filter_by(activa=True).order_by(Sede.nombre.asc()).all() if rol_actual in {"admin", "vendedor"} else [sede_actual]
+
     return render_template("admin.html", 
                            productos=query_prod.all(), 
                            categorias=Categoria.query.all(), 
-                           sedes=sedes_list,
+                           sedes=sedes_panel,
+                           sede_actual=sede_actual,
                            cat_filtro=cat_filtro,
                            solo_inventario=solo_inventario,
+                           solo_consulta=solo_consulta,
                            search_q=search_q)
 
 @app.route("/seleccionar_sede/<int:sede_id>")
 @login_required
 def seleccionar_sede(sede_id):
-    s = Sede.query.get_or_404(sede_id)
+    s = obtener_sede_activa(sede_id)
+    if not s:
+        abort(404)
+    usuario_actual = obtener_usuario_actual()
+    if usuario_actual and usuario_actual.rol != "admin":
+        if not usuario_puede_operar_sede(s.id, usuario_actual):
+            if usuario_actual.sede_id:
+                session["sede_id"] = usuario_actual.sede_id
+            flash("Solo puedes consultar la sede asignada a tu usuario.", "warning")
+            return redirect(request.referrer or url_for('index'))
+        session["sede_id"] = usuario_actual.sede_id
+        return redirect(request.referrer or url_for('index'))
     sede_actual = session.get("sede_id")
     session["sede_id"] = s.id
     if sede_actual != s.id:
@@ -3321,6 +3439,8 @@ def seleccionar_sede(sede_id):
 @app.route("/api/pos/stock/<int:prod_id>/<int:sede_id>")
 @login_required
 def api_stock_realtime(prod_id, sede_id):
+    if not usuario_puede_operar_sede(sede_id):
+        return jsonify({"error": "Acceso denegado para esta sede."}), 403
     inv = InventarioSede.query.filter_by(producto_id=prod_id, sede_id=sede_id).first()
     stock_local = inv.cantidad if inv else 0
     danado_local = inv.cantidad_danado if inv else 0
@@ -3342,8 +3462,12 @@ def api_stock_realtime(prod_id, sede_id):
 @inventario_required
 def actualizar_stock():
     try:
+        if session.get("rol") == "vendedor":
+            raise PermissionError("Tu rol solo puede consultar inventario.")
         prod_id = parse_non_negative_int(request.form.get("producto_id"))
         sede_id = parse_non_negative_int(request.form.get("sede_id"))
+        if sede_id is not None and not usuario_puede_operar_sede(sede_id):
+            raise PermissionError("Solo puedes ajustar inventario de tu sede asignada.")
         if prod_id is None or sede_id is None:
             raise ValueError("Producto o sede no validos.")
         cant = parse_non_negative_int(request.form.get("cantidad"))
@@ -3410,6 +3534,8 @@ def actualizar_stock():
 @inventario_required
 def actualizar_stock_masivo():
     try:
+        if session.get("rol") == "vendedor":
+            raise PermissionError("Tu rol solo puede consultar inventario.")
         prod_id = parse_non_negative_int(request.form.get("producto_id"))
         if prod_id is None:
             raise ValueError("Producto no valido.")
@@ -3426,6 +3552,8 @@ def actualizar_stock_masivo():
         cambios = 0
         for idx, sede_raw in enumerate(sede_ids_raw):
             sede_id = parse_non_negative_int(sede_raw)
+            if sede_id is not None and not usuario_puede_operar_sede(sede_id):
+                raise PermissionError("Solo puedes ajustar inventario de tu sede asignada.")
             cant = parse_non_negative_int(cantidades_raw[idx])
             cant_danado = parse_non_negative_int(danados_raw[idx])
             if sede_id is None or cant is None or cant_danado is None:
@@ -3477,7 +3605,7 @@ def actualizar_stock_masivo():
                 "cambios_registrados": cambios
             })
 
-        flash("Stock actualizado en todas las sedes.", "success")
+        flash("Inventario actualizado correctamente para la sede seleccionada.", "success")
         return redirect(request.referrer or url_for('admin'))
 
     except Exception as e:
@@ -4412,20 +4540,3 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5001"))
     print(f"[POS] build=render-ready pid={os.getpid()} debug={debug_mode} reloader={hot_reload} db={app.config['SQLALCHEMY_DATABASE_URI'].split(':', 1)[0]}")
     app.run(host="0.0.0.0", port=port, debug=debug_mode, use_reloader=hot_reload)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

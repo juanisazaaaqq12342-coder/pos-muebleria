@@ -5,7 +5,8 @@
   <div class="d-flex justify-content-between align-items-center mb-2">
     <div>
         <h2 class="fw-bold m-0 text-dark" style="font-family: 'Playfair Display', serif;">Gestión de Catálogo</h2>
-        <p class="text-muted small m-0 text-uppercase tracking-widest">CONTROL MAESTRO DE INVENTARIO</p>
+        <p class="text-muted small m-0 text-uppercase tracking-widest">CONTROL DE INVENTARIO POR SEDE</p>
+        <div class="small text-accent fw-bold mt-1"><i class="bi bi-geo-alt-fill me-1"></i>{{ "Consulta multisedes" if solo_consulta else sede_actual.nombre }}</div>
     </div>
   </div>
 
@@ -17,7 +18,7 @@
               Muebles y Existencias
           </button>
         </li>
-        {% if not solo_inventario %}
+        {% if not solo_inventario and not solo_consulta %}
         <li class="nav-item ms-2">
           <button class="nav-link fw-bold px-4 rounded-pill" id="cat-tab" data-bs-toggle="tab" data-bs-target="#cat-pane">
               Categorías
@@ -49,12 +50,17 @@
       <div class="row g-4 align-items-stretch">
         <div class="col-md-4">
           <div class="glass-panel p-4 border-0 shadow-lg admin-register-card">
-            {% if solo_inventario %}
-            <h5 class="fw-bold mb-4 text-dark"><i class="bi bi-boxes text-accent me-2"></i>Rol Bodega</h5>
+            {% if solo_inventario or solo_consulta %}
+            <h5 class="fw-bold mb-4 text-dark"><i class="bi bi-boxes text-accent me-2"></i>{{ 'Consulta de Inventario' if solo_consulta else 'Rol Bodega' }}</h5>
             <div class="p-3 rounded-4 border bg-light">
-              <div class="fw-bold mb-2">Inventario Multisede</div>
-              <div class="small text-muted">Recibe mercancia, realiza conteo y ajusta stock por sede desde el boton <b>Stock</b>.</div>
+              <div class="fw-bold mb-2">{{ sede_actual.nombre }}</div>
+              {% if solo_consulta %}
+              <div class="small text-muted">Tu usuario comercial puede consultar el inventario de todas las sedes.</div>
+              <div class="small text-muted mt-2">Puedes revisar la disponibilidad por producto en cada sede, pero no modificar existencias, precios ni visibilidad.</div>
+              {% else %}
+              <div class="small text-muted">Recibe mercancia, realiza conteo y ajusta stock de la sede actual desde el boton <b>Stock</b>.</div>
               <div class="small text-muted mt-2">No puedes crear productos, editar precios ni cambiar visibilidad.</div>
+              {% endif %}
             </div>
             {% else %}
             <h5 class="fw-bold mb-4 text-dark"><i class="bi bi-plus-lg text-accent me-2"></i>Registrar Nuevo</h5>
@@ -99,7 +105,7 @@
                         <tr>
                             <th class="ps-4">Imagen</th>
                             <th>Producto</th>
-                            <th class="text-center">Stock Global</th>
+                            <th class="text-center">{{ "Stock Total" if solo_consulta else "Stock Sede" }}</th>
                             <th>Precio</th>
                             <th class="text-end pe-4">Acciones</th>
                         </tr>
@@ -108,6 +114,15 @@
                       {% for p in productos %}
                       <tr class="{{ 'opacity-50' if not p.activo }}">
                           <td class="ps-4">
+                              {% if solo_consulta %}
+                              <div class="rounded shadow-sm border d-inline-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                {% if p.imagen_url %}
+                                <img src="{{ producto_image_url(p.imagen_url) }}" class="rounded" style="width: 48px; height: 48px; object-fit: cover;">
+                                {% else %}
+                                <span class="bg-light rounded d-flex align-items-center justify-content-center text-muted w-100 h-100"><i class="bi bi-image"></i></span>
+                                {% endif %}
+                              </div>
+                              {% else %}
                               <form method="POST" enctype="multipart/form-data" class="m-0">
                                 <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
                                 <input type="hidden" name="tipo" value="update_imagen">
@@ -129,17 +144,25 @@
                                   {% endif %}
                                 </label>
                               </form>
+                              {% endif %}
                           </td>
                           <td>
                               <div class="fw-bold text-dark">{{ p.nombre }}</div>
                               <span class="text-muted small">{{ p.categoria_rel.nombre if p.categoria_rel else 'General' }}</span>
                           </td>
                           <td class="text-center">
-                              {% set st_total = p.inventarios|sum(attribute='cantidad') %}
-                              <span class="badge {{ 'bg-danger' if st_total <= 0 else 'bg-primary' }} rounded-pill px-3 fs-6">{{ st_total }}</span>
+                              {% set ns_stock = namespace(actual=0, total=0) %}
+                              {% for inv in p.inventarios %}
+                                {% if inv.sede_id == sede_actual.id %}
+                                  {% set ns_stock.actual = inv.cantidad %}
+                                {% endif %}
+                                {% set ns_stock.total = ns_stock.total + (inv.cantidad or 0) %}
+                              {% endfor %}
+                              {% set stock_mostrado = ns_stock.total if solo_consulta else ns_stock.actual %}
+                              <span class="badge {{ 'bg-danger' if stock_mostrado <= 0 else 'bg-primary' }} rounded-pill px-3 fs-6">{{ stock_mostrado }}</span>
                           </td>
                           <td>
-                              {% if solo_inventario %}
+                              {% if solo_inventario or solo_consulta %}
                               <div class="fw-bold text-primary">${{ "{:,.0f}".format(p.precio or 0) }}</div>
                               {% else %}
                               <form method="POST" class="d-flex">
@@ -159,7 +182,7 @@
                                         data-bs-toggle="modal" data-bs-target="#modalStock_{{ p.id }}">
                                     <i class="bi bi-box-seam me-1 text-accent"></i> Stock
                                 </button>
-                                {% if not solo_inventario %}
+                                {% if not solo_inventario and not solo_consulta %}
                                 <form method="POST" class="m-0">
                                     <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
                                     <input type="hidden" name="tipo" value="toggle_producto">
@@ -191,7 +214,7 @@
       </div>
     </div>
 
-    {% if not solo_inventario %}
+    {% if not solo_inventario and not solo_consulta %}
     <!-- CATEGORIAS -->
     <div class="tab-pane fade" id="cat-pane">
       <div class="glass-panel p-4 p-md-5 d-flex flex-column border-0 category-manager-panel">
@@ -245,7 +268,7 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-4">
-        <p class="text-center text-muted small text-uppercase mb-4">Ajuste de existencias físicas por sede</p>
+        <p class="text-center text-muted small text-uppercase mb-4">{{ "Inventario de todas las sedes" if (not solo_inventario) else "Inventario de la sede seleccionada" }}</p>
         
         <form action="{{ url_for('actualizar_stock_masivo') }}" method="POST" class="stock-bulk-form">
             <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
@@ -278,7 +301,8 @@
                                value="0"
                                min="0"
                                step="1"
-                               data-stock-base="{{ ns.stock_actual }}">
+                               data-stock-base="{{ ns.stock_actual }}"
+                               {% if solo_consulta %}readonly disabled{% endif %}>
                     </div>
                     <div class="col-4">
                         <label class="small text-muted fw-bold text-uppercase">Disponible final</label>
@@ -287,21 +311,26 @@
                                class="form-control fw-bold text-center js-stock-final"
                                value="{{ ns.stock_actual }}"
                                min="0"
-                               data-stock-base="{{ ns.stock_actual }}">
+                               data-stock-base="{{ ns.stock_actual }}"
+                               {% if solo_consulta %}readonly{% endif %}>
                     </div>
                     <div class="col-12">
                         <label class="small text-muted fw-bold text-uppercase">Dañado</label>
-                        <input type="number" name="cantidad_danado[]" class="form-control fw-bold text-center" value="{{ ns.stock_danado }}" min="0">
+                        <input type="number" name="cantidad_danado[]" class="form-control fw-bold text-center" value="{{ ns.stock_danado }}" min="0" {% if solo_consulta %}readonly disabled{% endif %}>
                     </div>
                 </div>
             </div>
             {% endfor %}
 
+            {% if not solo_consulta %}
             <div class="d-grid mt-2">
                 <button class="btn btn-primary px-4 fw-bold" type="submit">
-                    <i class="bi bi-check2-all me-1"></i> GUARDAR TODAS LAS SEDES
+                    <i class="bi bi-check2-all me-1"></i> GUARDAR INVENTARIO
                 </button>
             </div>
+            {% else %}
+            <div class="small text-muted text-center mt-2">Vista solo lectura para asesores comerciales.</div>
+            {% endif %}
         </form>
 
       </div>
@@ -434,3 +463,4 @@
 </script>
 
 {% endblock %}
+

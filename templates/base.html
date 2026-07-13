@@ -59,7 +59,7 @@
         </li>
         {% endif %}
 
-        {% if session['rol'] in ['admin', 'bodega'] %}
+        {% if session['rol'] in ['admin', 'bodega', 'vendedor'] %}
         <li class="nav-item">
           <a href="{{ url_for('admin') }}"
             class="nav-link topnav-link {% if request.endpoint=='admin' %}active{% endif %}">
@@ -477,8 +477,3 @@
 </body>
 
 </html>
-
-
-
-
-

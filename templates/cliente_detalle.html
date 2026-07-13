@@ -291,17 +291,41 @@
     </div>
   </div>
 
-            <div class="row g-3">
-            <div class="col-md-8"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Concepto</label><input type="text" name="descripcion_credito" class="form-control" placeholder="Ej: Sala, colchon, refinanciacion"></div>
-            <div class="col-md-4"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Saldo actual / monto a registrar</label><input type="number" name="monto_total_credito" class="form-control fw-bold" min="1" required></div>
-            <div class="col-md-4"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Cuota Inicial</label><input type="number" name="cuota_inicial_credito" class="form-control fw-bold" min="0" value="0" required></div>
-            <div class="col-md-4"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Frecuencia</label><select name="periodicidad_credito" id="manualCreditoPeriodicidad" class="form-select" onchange="actualizarOpcionesDiaPagoManualCredito()"><option value="Semanal">Semanal</option><option value="Quincenal">Quincenal</option><option value="Mensual" selected>Mensual</option></select></div>
-            <div class="col-md-4"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">N de Cuotas</label><input type="number" name="numero_cuotas_credito" id="manualCreditoNumeroCuotas" class="form-control fw-bold" min="1" max="120" value="12" required oninput="sincronizarCuotasCreditoManualEstado()"></div>
-            <div class="col-md-6"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Cuota actual</label><input type="number" name="cuota_actual_credito" id="manualCreditoCuotaActual" class="form-control fw-bold" min="1" max="120" value="1" required oninput="sincronizarCuotasCreditoManualEstado()"></div>
-            <div class="col-md-6"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Desde que cuota cobra el sistema</label><input type="number" name="cuota_inicio_sistema_credito" id="manualCreditoCuotaInicioSistema" class="form-control fw-bold" min="1" max="120" value="1" required oninput="sincronizarCuotasCreditoManualEstado()"></div>
-            <div class="col-12"><div class="small text-muted">Si el credito ya esta activo, registra aqui el saldo pendiente real y define desde que cuota seguiremos cobrando en esta app.</div></div>
+<div class="modal fade" id="modalCreditoManual" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content glass-panel border-0 shadow-xl overflow-hidden">
+      <div class="modal-header bg-dark text-white p-4">
+        <h5 class="modal-title fw-bold"><i class="bi bi-journal-plus text-accent me-2"></i>Crear Credito Manual</h5>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <form action="{{ url_for('crear_credito_manual') }}" method="POST" id="manualCreditoForm">
+          <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+          <input type="hidden" name="cliente_id_credito_manual" id="manualCreditoClienteId" value="{{ cliente.id }}">
+          <input type="hidden" name="return_to" id="manualCreditoReturnTo" value="{{ request.full_path if request.query_string else request.path }}">
+          <input type="hidden" name="fecha_inicio_credito" id="manualCreditoFechaInicio">
+          <div class="rounded-4 bg-light border p-3 mb-4">
+            <div class="small text-muted text-uppercase fw-bold">Cliente</div>
+            <div class="fw-bold fs-5 text-dark" id="manualCreditoClienteNombre">{{ nombre_completo }}</div>
+            <div class="small text-muted">Registra el producto y los datos pendientes del credito para ingresarlo a cartera.</div>
           </div>
-          <div class="mt-3 d-none" id="manualCreditoDiaPagoWrap"> <label class="form-label text-muted fw-bold small text-uppercase tracking-wider" id="manualCreditoDiaPagoLabel">Dia de Pago</label><select name="dia_pago_credito" id="manualCreditoDiaPago" class="form-select"></select><div class="row g-2 mt-2 d-none" id="manualCreditoDiaPagoQuincenalWrap"><div class="col-md-6"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Primer dia</label><select name="dia_pago_credito_1" id="manualCreditoDiaPago1" class="form-select" onchange="normalizarSeleccionQuincenalManual(1)"></select></div><div class="col-md-6"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Segundo dia</label><select name="dia_pago_credito_2" id="manualCreditoDiaPago2" class="form-select" onchange="normalizarSeleccionQuincenalManual(2)"></select></div><div class="col-12"><div class="small text-muted">Escoge dos dias libres para los pagos quincenales.</div></div></div></div>
+          <div class="row g-3">
+            <div class="col-md-8"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Nombre del producto</label><input type="text" name="producto_credito" class="form-control" placeholder="Ej: Sala, colchon, comedor" required></div>
+            <div class="col-md-4"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Saldo pendiente</label><input type="number" name="saldo_pendiente_credito" class="form-control fw-bold" min="1" required></div>
+            <div class="col-md-4"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Frecuencia</label><select name="periodicidad_credito" id="manualCreditoPeriodicidad" class="form-select" onchange="actualizarOpcionesDiaPagoManualCredito()"><option value="Semanal">Semanal</option><option value="Quincenal">Quincenal</option><option value="Mensual" selected>Mensual</option></select></div>
+            <div class="col-md-4"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Numero de cuotas</label><input type="number" name="numero_cuotas_credito" id="manualCreditoNumeroCuotas" class="form-control fw-bold" min="1" max="120" value="12" required oninput="sincronizarCuotasCreditoManualEstado()"></div>
+            <div class="col-md-4"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Valor de la cuota</label><input type="number" name="valor_cuota_credito" id="manualCreditoValorCuota" class="form-control fw-bold" min="1" required></div>
+            <div class="col-12"><div class="small text-muted">El sistema guardara el saldo pendiente y generara el plan de pagos con la frecuencia seleccionada.</div></div>
+          </div>
+          <div class="mt-3 d-none" id="manualCreditoDiaPagoWrap">
+            <label class="form-label text-muted fw-bold small text-uppercase tracking-wider" id="manualCreditoDiaPagoLabel">Dia de Pago</label>
+            <select name="dia_pago_credito" id="manualCreditoDiaPago" class="form-select"></select>
+            <div class="row g-2 mt-2 d-none" id="manualCreditoDiaPagoQuincenalWrap">
+              <div class="col-md-6"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Primer dia</label><select name="dia_pago_credito_1" id="manualCreditoDiaPago1" class="form-select" onchange="normalizarSeleccionQuincenalManual(1)"></select></div>
+              <div class="col-md-6"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Segundo dia</label><select name="dia_pago_credito_2" id="manualCreditoDiaPago2" class="form-select" onchange="normalizarSeleccionQuincenalManual(2)"></select></div>
+              <div class="col-12"><div class="small text-muted">Escoge dos dias libres para los pagos quincenales.</div></div>
+            </div>
+          </div>
           <div class="mt-3"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Observaciones</label><textarea name="observaciones_credito" rows="3" class="form-control" placeholder="Notas del credito"></textarea></div>
           <div class="d-flex justify-content-end gap-2 mt-4"><button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-warning fw-bold rounded-pill px-4 shadow-sm">Guardar Credito</button></div>
         </form>
@@ -309,35 +333,19 @@
     </div>
   </div>
 </div>
+
 <script>
   const opcionesDiaPagoManualFallback = { Semanal: [{ value: '1', label: 'Lunes' }, { value: '2', label: 'Martes' }, { value: '3', label: 'Miercoles' }, { value: '4', label: 'Jueves' }, { value: '5', label: 'Viernes' }, { value: '6', label: 'Sabado' }, { value: '0', label: 'Domingo' }], Quincenal: Array.from({ length: 31 }, (_, i) => ({ value: String(i + 1), label: `Dia ${i + 1}` })), Mensual: Array.from({ length: 30 }, (_, i) => ({ value: String(i + 1), label: `Dia ${i + 1}` })) };
   let opcionesDiaPagoManual = JSON.parse(JSON.stringify(opcionesDiaPagoManualFallback));
   function sincronizarCuotasCreditoManualEstado() {
     const totalInput = document.getElementById('manualCreditoNumeroCuotas');
-    const actualInput = document.getElementById('manualCreditoCuotaActual');
-    const inicioInput = document.getElementById('manualCreditoCuotaInicioSistema');
-    if (!totalInput || !actualInput || !inicioInput) return;
-    const total = Math.max(1, parseInt(totalInput.value || '1', 10) || 1);
+    if (!totalInput) return;
+    const total = Math.max(1, Math.min(120, parseInt(totalInput.value || '1', 10) || 1));
     totalInput.value = total;
-    actualInput.max = String(total);
-    inicioInput.max = String(total);
-    let actual = Math.max(1, Math.min(total, parseInt(actualInput.value || '1', 10) || 1));
-    actualInput.value = actual;
-    inicioInput.min = String(actual);
-    let inicio = parseInt(inicioInput.value || String(actual), 10) || actual;
-    if (inicio < actual) inicio = actual;
-    if (inicio > total) inicio = total;
-    inicioInput.value = inicio;
   }
   function normalizarSeleccionQuincenalManual(origen = 1) { const select1 = document.getElementById('manualCreditoDiaPago1'); const select2 = document.getElementById('manualCreditoDiaPago2'); if (!select1 || !select2 || select1.disabled || select2.disabled || !select1.value || !select2.value || select1.value !== select2.value) return; const opciones = Array.from(select1.options).map(op => op.value); if (opciones.length < 2) return; const fijo = origen === 2 ? select2 : select1; const ajustar = origen === 2 ? select1 : select2; const indiceActual = opciones.indexOf(fijo.value); const candidatos = opciones.slice(indiceActual + 1).concat(opciones.slice(0, indiceActual)); const reemplazo = candidatos.find(valor => valor !== fijo.value); if (reemplazo) ajustar.value = reemplazo; }
   function actualizarOpcionesDiaPagoManualCredito() { const period = document.getElementById('manualCreditoPeriodicidad')?.value || 'Mensual'; const wrap = document.getElementById('manualCreditoDiaPagoWrap'); const label = document.getElementById('manualCreditoDiaPagoLabel'); const select = document.getElementById('manualCreditoDiaPago'); const quincenalWrap = document.getElementById('manualCreditoDiaPagoQuincenalWrap'); const select1 = document.getElementById('manualCreditoDiaPago1'); const select2 = document.getElementById('manualCreditoDiaPago2'); if (!wrap || !select || !quincenalWrap || !select1 || !select2) return; const opciones = (opcionesDiaPagoManual && opcionesDiaPagoManual[period] && opcionesDiaPagoManual[period].length) ? opcionesDiaPagoManual[period] : opcionesDiaPagoManualFallback[period]; const html = opciones.map(op => `<option value="${op.value}">${op.label}</option>`).join(''); if (period === 'Quincenal') { const previo1 = select1.value || '1'; const previo2 = select2.value || '15'; select.innerHTML = ''; select.disabled = true; select.classList.add('d-none'); select1.disabled = false; select2.disabled = false; select1.innerHTML = html; select2.innerHTML = html; if (opciones.some(op => op.value === previo1)) select1.value = previo1; if (!select1.value && opciones.length) select1.value = String(opciones[0].value); if (opciones.some(op => op.value === previo2)) select2.value = previo2; if (!select2.value && opciones.length) select2.value = String(opciones[Math.min(14, opciones.length - 1)].value); if (select1.value === select2.value && opciones.length > 1) { const alternativa = opciones.find(op => op.value !== select1.value); if (alternativa) select2.value = alternativa.value; } quincenalWrap.classList.remove('d-none'); if (label) label.innerText = 'Dias de Pago'; } else { const previo = select.value || ''; select.disabled = false; select.classList.remove('d-none'); select.innerHTML = html; if (opciones.some(op => op.value === previo)) select.value = previo; if (!select.value && opciones.length) select.value = String(opciones[0].value); select1.disabled = true; select2.disabled = true; quincenalWrap.classList.add('d-none'); if (label) label.innerText = 'Dia de Pago'; } wrap.classList.remove('d-none'); }
-  function prepararModalCreditoManual(clienteId, clienteNombre, returnTo) { const form = document.getElementById('manualCreditoForm'); if (form) form.reset(); document.getElementById('manualCreditoClienteId').value = clienteId; document.getElementById('manualCreditoClienteNombre').innerText = clienteNombre || '{{ nombre_completo }}'; document.getElementById('manualCreditoReturnTo').value = returnTo || '{{ request.path }}'; const fechaInput = document.getElementById('manualCreditoFechaInicio'); if (fechaInput) fechaInput.value = new Date().toISOString().slice(0, 10); const periodicidad = document.getElementById('manualCreditoPeriodicidad'); if (periodicidad) periodicidad.value = 'Mensual'; const cuotaActual = document.getElementById('manualCreditoCuotaActual'); const cuotaInicio = document.getElementById('manualCreditoCuotaInicioSistema'); const totalCuotas = document.getElementById('manualCreditoNumeroCuotas'); if (totalCuotas) totalCuotas.value = '12'; if (cuotaActual) cuotaActual.value = '1'; if (cuotaInicio) cuotaInicio.value = '1'; sincronizarCuotasCreditoManualEstado(); actualizarOpcionesDiaPagoManualCredito(); new bootstrap.Modal(document.getElementById('modalCreditoManual')).show(); }
+  function prepararModalCreditoManual(clienteId, clienteNombre, returnTo) { const form = document.getElementById('manualCreditoForm'); if (form) form.reset(); document.getElementById('manualCreditoClienteId').value = clienteId; document.getElementById('manualCreditoClienteNombre').innerText = clienteNombre || '{{ nombre_completo }}'; document.getElementById('manualCreditoReturnTo').value = returnTo || '{{ request.path }}'; const fechaInput = document.getElementById('manualCreditoFechaInicio'); if (fechaInput) fechaInput.value = new Date().toISOString().slice(0, 10); const periodicidad = document.getElementById('manualCreditoPeriodicidad'); if (periodicidad) periodicidad.value = 'Mensual'; const totalCuotas = document.getElementById('manualCreditoNumeroCuotas'); if (totalCuotas) totalCuotas.value = '12'; sincronizarCuotasCreditoManualEstado(); actualizarOpcionesDiaPagoManualCredito(); new bootstrap.Modal(document.getElementById('modalCreditoManual')).show(); }
   document.addEventListener('DOMContentLoaded', function() { const fechaInput = document.getElementById('manualCreditoFechaInicio'); if (fechaInput && !fechaInput.value) fechaInput.value = new Date().toISOString().slice(0, 10); sincronizarCuotasCreditoManualEstado(); fetch('/api/intereses_credito').then(r => r.json()).then(d => { const remotas = (d && d.dias_pago) ? d.dias_pago : {}; opcionesDiaPagoManual = { Semanal: (remotas.Semanal && remotas.Semanal.length) ? remotas.Semanal : opcionesDiaPagoManualFallback.Semanal, Quincenal: (remotas.Quincenal && remotas.Quincenal.length) ? remotas.Quincenal : opcionesDiaPagoManualFallback.Quincenal, Mensual: (remotas.Mensual && remotas.Mensual.length) ? remotas.Mensual : opcionesDiaPagoManualFallback.Mensual }; actualizarOpcionesDiaPagoManualCredito(); }).catch(() => { opcionesDiaPagoManual = JSON.parse(JSON.stringify(opcionesDiaPagoManualFallback)); actualizarOpcionesDiaPagoManualCredito(); }); });
 </script>
 {% endblock %}
-
-
-
-
-
-
