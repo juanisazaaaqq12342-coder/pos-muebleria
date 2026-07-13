@@ -3044,18 +3044,50 @@ def crear_credito_manual():
 @admin_required
 def eliminar_cliente(cliente_id):
     c = db.session.get(Cliente, cliente_id)
-    if c:
-        if c.deuda and c.deuda > 0:
-            flash("Error: El cliente tiene deuda pendiente y no puede ser borrado.", "danger")
-            return redirect(url_for("clientes"))
-            
-        Venta.query.filter_by(cliente_id=c.id).update({"cliente_id": None})
-        MovimientoCredito.query.filter_by(cliente_id=c.id).delete()
+    if not c:
+        flash("Cliente no encontrado.", "warning")
+        return redirect(url_for("clientes"))
+
+    if c.deuda and c.deuda > 0:
+        flash("Error: El cliente tiene deuda pendiente y no puede ser borrado.", "danger")
+        return redirect(url_for("clientes"))
+
+    try:
+        creditos_cliente = Credito.query.filter_by(cliente_id=c.id).all()
+        credito_ids = [cr.id for cr in creditos_cliente]
+
+        if credito_ids:
+            ReferenciaCliente.query.filter(
+                ReferenciaCliente.credito_id.in_(credito_ids)
+            ).delete(synchronize_session=False)
+            AbonoCredito.query.filter(
+                AbonoCredito.credito_id.in_(credito_ids)
+            ).delete(synchronize_session=False)
+            CuotaCredito.query.filter(
+                CuotaCredito.credito_id.in_(credito_ids)
+            ).delete(synchronize_session=False)
+            Credito.query.filter(
+                Credito.id.in_(credito_ids)
+            ).delete(synchronize_session=False)
+
+        Venta.query.filter_by(cliente_id=c.id).update({"cliente_id": None}, synchronize_session=False)
+        ReferenciaCliente.query.filter_by(cliente_id=c.id).delete(synchronize_session=False)
+        MovimientoCredito.query.filter_by(cliente_id=c.id).delete(synchronize_session=False)
         db.session.delete(c)
         db.session.commit()
-        flash("Cliente eliminado correctamente", "success")
-        
+
+        try:
+            registrar_auditoria("Eliminar Cliente", f"Cliente {cliente_id} eliminado con limpieza de historial relacionado")
+        except Exception:
+            pass
+
+        flash("Cliente eliminado correctamente.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"No fue posible eliminar el cliente: {e}", "danger")
+
     return redirect(url_for("clientes"))
+            
 
 # ==========================
 # HISTORIAL Y DEVOLUCIONES
@@ -4380,6 +4412,8 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5001"))
     print(f"[POS] build=render-ready pid={os.getpid()} debug={debug_mode} reloader={hot_reload} db={app.config['SQLALCHEMY_DATABASE_URI'].split(':', 1)[0]}")
     app.run(host="0.0.0.0", port=port, debug=debug_mode, use_reloader=hot_reload)
+
+
 
 
 
