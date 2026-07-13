@@ -418,6 +418,15 @@
       return false;
     }
 
+    document.addEventListener('focusin', function (e) {
+      const target = e.target;
+      if (!(target instanceof HTMLInputElement) || target.type !== 'number' || target.readOnly || target.disabled) return;
+      if (!target.value) return;
+      requestAnimationFrame(() => {
+        if (document.activeElement === target) target.select();
+      });
+    });
+
     document.addEventListener('keydown', function (e) {
       if (isPosPage) return;
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {

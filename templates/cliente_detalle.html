@@ -313,7 +313,7 @@
             <div class="col-md-8"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Nombre del producto</label><input type="text" name="producto_credito" class="form-control" placeholder="Ej: Sala, colchon, comedor" required></div>
             <div class="col-md-4"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Saldo pendiente</label><input type="number" name="saldo_pendiente_credito" class="form-control fw-bold" min="1" required></div>
             <div class="col-md-4"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Frecuencia</label><select name="periodicidad_credito" id="manualCreditoPeriodicidad" class="form-select" onchange="actualizarOpcionesDiaPagoManualCredito()"><option value="Semanal">Semanal</option><option value="Quincenal">Quincenal</option><option value="Mensual" selected>Mensual</option></select></div>
-            <div class="col-md-4"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Numero de cuotas</label><input type="number" name="numero_cuotas_credito" id="manualCreditoNumeroCuotas" class="form-control fw-bold" min="1" max="120" value="12" required oninput="sincronizarCuotasCreditoManualEstado()"></div>
+            <div class="col-md-4"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Numero de cuotas</label><input type="number" name="numero_cuotas_credito" id="manualCreditoNumeroCuotas" class="form-control fw-bold" min="1" max="120" value="12" required onblur="sincronizarCuotasCreditoManualEstado()"></div>
             <div class="col-md-4"><label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Valor de la cuota</label><input type="number" name="valor_cuota_credito" id="manualCreditoValorCuota" class="form-control fw-bold" min="1" required></div>
             <div class="col-12"><div class="small text-muted">El sistema guardara el saldo pendiente y generara el plan de pagos con la frecuencia seleccionada.</div></div>
           </div>
@@ -340,7 +340,9 @@
   function sincronizarCuotasCreditoManualEstado() {
     const totalInput = document.getElementById('manualCreditoNumeroCuotas');
     if (!totalInput) return;
-    const total = Math.max(1, Math.min(120, parseInt(totalInput.value || '1', 10) || 1));
+    const rawValue = (totalInput.value || '').trim();
+    if (!rawValue) return;
+    const total = Math.max(1, Math.min(120, parseInt(rawValue, 10) || 1));
     totalInput.value = total;
   }
   function normalizarSeleccionQuincenalManual(origen = 1) { const select1 = document.getElementById('manualCreditoDiaPago1'); const select2 = document.getElementById('manualCreditoDiaPago2'); if (!select1 || !select2 || select1.disabled || select2.disabled || !select1.value || !select2.value || select1.value !== select2.value) return; const opciones = Array.from(select1.options).map(op => op.value); if (opciones.length < 2) return; const fijo = origen === 2 ? select2 : select1; const ajustar = origen === 2 ? select1 : select2; const indiceActual = opciones.indexOf(fijo.value); const candidatos = opciones.slice(indiceActual + 1).concat(opciones.slice(0, indiceActual)); const reemplazo = candidatos.find(valor => valor !== fijo.value); if (reemplazo) ajustar.value = reemplazo; }
