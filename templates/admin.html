@@ -2,11 +2,21 @@
 {% block content %}
 <div class="animate-slide-in d-flex flex-column gap-4 admin-catalog-layout">
 
-  <div class="d-flex justify-content-between align-items-center mb-2">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-2">
     <div>
-        <h2 class="fw-bold m-0 text-dark" style="font-family: 'Playfair Display', serif;">Gestión de Catálogo</h2>
+        <h2 class="fw-bold m-0 text-dark" style="font-family: 'Playfair Display', serif;">Gestion de Catalogo</h2>
         <p class="text-muted small m-0 text-uppercase tracking-widest">CONTROL DE INVENTARIO POR SEDE</p>
         <div class="small text-accent fw-bold mt-1"><i class="bi bi-geo-alt-fill me-1"></i>{{ "Consulta multisedes" if solo_consulta else sede_actual.nombre }}</div>
+    </div>
+    <div class="d-flex flex-column align-items-md-end gap-2">
+      <div class="small text-muted text-uppercase fw-bold tracking-widest">Sedes</div>
+      <div class="d-flex gap-2 flex-wrap justify-content-md-end">
+        {% for s in sedes %}
+        <a href="{{ url_for('seleccionar_sede', sede_id=s.id) }}" class="btn btn-sm rounded-pill px-3 fw-bold {{ 'btn-primary' if sede_actual and sede_actual.id == s.id else 'btn-glass text-muted' }}">
+          {{ s.nombre }}
+        </a>
+        {% endfor %}
+      </div>
     </div>
   </div>
 
@@ -106,6 +116,9 @@
                             <th class="ps-4">Imagen</th>
                             <th>Producto</th>
                             <th class="text-center">{{ "Stock Total" if solo_consulta else "Stock Sede" }}</th>
+                            {% if not solo_inventario and not solo_consulta %}
+                            <th class="text-center">Stock Total</th>
+                            {% endif %}
                             <th>Precio</th>
                             <th class="text-end pe-4">Acciones</th>
                         </tr>
@@ -161,6 +174,11 @@
                               {% set stock_mostrado = ns_stock.total if solo_consulta else ns_stock.actual %}
                               <span class="badge {{ 'bg-danger' if stock_mostrado <= 0 else 'bg-primary' }} rounded-pill px-3 fs-6">{{ stock_mostrado }}</span>
                           </td>
+                          {% if not solo_inventario and not solo_consulta %}
+                          <td class="text-center">
+                              <span class="badge {{ 'bg-danger' if ns_stock.total <= 0 else 'bg-dark' }} rounded-pill px-3 fs-6">{{ ns_stock.total }}</span>
+                          </td>
+                          {% endif %}
                           <td>
                               {% if solo_inventario or solo_consulta %}
                               <div class="fw-bold text-primary">${{ "{:,.0f}".format(p.precio or 0) }}</div>
