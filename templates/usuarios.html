@@ -21,7 +21,12 @@
           </div>
           <div class="mb-3">
               <label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Contraseña</label>
-              <input type="password" name="password" class="form-control" placeholder="********" required>
+              <div class="input-group">
+                <input type="password" name="password" class="form-control js-password-toggle-input" placeholder="********" required autocomplete="new-password">
+                <button type="button" class="btn btn-outline-secondary js-password-toggle-btn" aria-label="Mostrar clave" aria-pressed="false">
+                  <i class="bi bi-eye"></i>
+                </button>
+              </div>
           </div>
           <div class="mb-3">
               <label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Rol en la Empresa</label>
@@ -120,11 +125,21 @@
         <div class="modal-body p-4">
           <div class="mb-3">
             <label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Nueva clave</label>
-            <input type="password" name="nueva_clave" class="form-control" minlength="4" required autocomplete="new-password">
+            <div class="input-group">
+              <input type="password" name="nueva_clave" class="form-control js-password-toggle-input" minlength="4" required autocomplete="new-password">
+              <button type="button" class="btn btn-outline-secondary js-password-toggle-btn" aria-label="Mostrar clave" aria-pressed="false">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
           </div>
           <div>
             <label class="form-label text-muted fw-bold small text-uppercase tracking-wider">Confirmar clave</label>
-            <input type="password" name="confirmar_clave" class="form-control" minlength="4" required autocomplete="new-password">
+            <div class="input-group">
+              <input type="password" name="confirmar_clave" class="form-control js-password-toggle-input" minlength="4" required autocomplete="new-password">
+              <button type="button" class="btn btn-outline-secondary js-password-toggle-btn" aria-label="Mostrar clave" aria-pressed="false">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
           </div>
         </div>
         <div class="modal-footer bg-light border-0">
@@ -151,7 +166,21 @@ function toggleSede() {
         sedeDiv.style.pointerEvents = "none";
     }
 }
-document.addEventListener("DOMContentLoaded", toggleSede);
+document.addEventListener("DOMContentLoaded", function() {
+    toggleSede();
+    document.querySelectorAll('.js-password-toggle-btn').forEach(function(button) {
+        button.addEventListener('click', function() {
+            const input = button.parentElement.querySelector('.js-password-toggle-input');
+            const icon = button.querySelector('i');
+            if (!input || !icon) return;
+            const visible = input.type === 'text';
+            input.type = visible ? 'password' : 'text';
+            icon.className = visible ? 'bi bi-eye' : 'bi bi-eye-slash';
+            button.setAttribute('aria-pressed', visible ? 'false' : 'true');
+            button.setAttribute('aria-label', visible ? 'Mostrar clave' : 'Ocultar clave');
+        });
+    });
+});
 </script>
 {% endblock %}
 

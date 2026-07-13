@@ -3789,15 +3789,18 @@ def caja():
     ventas = query_ventas.all()
     gastos = query_gastos.all()
     abonos = query_abonos.all()
-    
+    sedes_activas = Sede.query.filter_by(activa=True).all()
+    sedes_map = {s.id: s.nombre for s in sedes_activas}
+
     te = 0
     td = 0
-    
-    # Sumar pagos de ventas directas y cuotas iniciales de créditos
+    movimientos_caja = []
+
+    # Sumar pagos de ventas directas y cuotas iniciales de creditos
     for v in ventas:
         if v.metodo_pago == "Credito":
             # La cuota inicial se asume en efectivo por defecto a menos que agreguemos un selector luego,
-            # pero típicamente ingresa en caja física.
+            # pero tipicamente ingresa en caja fisica.
             credito = Credito.query.filter_by(venta_id=v.id).first()
             if credito and credito.cuota_inicial:
                 te += credito.cuota_inicial
@@ -3805,13 +3808,58 @@ def caja():
             efectivo, tarjeta, transferencia = desglose_pago_venta(v)
             te += efectivo
             td += (tarjeta + transferencia)
-            
-    # Sumar pagos de cuotas realizados en el módulo de cobranzas
+
+        movimientos_caja.append({
+            "fecha": v.fecha_cierre or v.fecha_creacion,
+            "tipo": "Venta",
+            "detalle": f"Venta #{v.id}",
+            "sede": v.sede.nombre if v.sede else "Sin sede",
+            "metodo": v.metodo_pago or "---",
+            "responsable": v.vendedor.username if v.vendedor else "---",
+            "monto": int(v.total or 0),
+            "clase_monto": "text-success",
+            "ticket_url": url_for("imprimir_ticket", venta_id=v.id)
+        })
+
+    # Sumar pagos de cuotas realizados en el modulo de cobranzas
     for a in abonos:
         if a.metodo_pago and a.metodo_pago.lower() in ['tarjeta', 'transferencia', 'digital']:
             td += a.monto
         else:
             te += a.monto
+
+        credito = a.credito
+        venta_credito = credito.venta if credito else None
+        cliente_credito = credito.cliente if credito else None
+        detalle_abono = f"Abono {credito.codigo}" if credito else f"Abono #{a.id}"
+        if cliente_credito:
+            detalle_abono += f" - {nombre_completo_cliente(cliente_credito)}"
+        movimientos_caja.append({
+            "fecha": a.fecha,
+            "tipo": "Abono",
+            "detalle": detalle_abono,
+            "sede": venta_credito.sede.nombre if venta_credito and venta_credito.sede else "Sin sede",
+            "metodo": a.metodo_pago or "Efectivo",
+            "responsable": a.usuario.username if a.usuario else "---",
+            "monto": int(a.monto or 0),
+            "clase_monto": "text-primary",
+            "ticket_url": ""
+        })
+
+    for g in gastos:
+        movimientos_caja.append({
+            "fecha": g.fecha,
+            "tipo": "Gasto",
+            "detalle": g.descripcion or f"Gasto #{g.id}",
+            "sede": sedes_map.get(g.sede_id, "General"),
+            "metodo": "Salida de efectivo",
+            "responsable": g.usuario.username if g.usuario else "---",
+            "monto": int(g.monto or 0),
+            "clase_monto": "text-danger",
+            "ticket_url": ""
+        })
+
+    movimientos_caja.sort(key=lambda mov: mov["fecha"] or datetime.min, reverse=True)
 
     tg = sum(g.monto for g in gastos)
     
@@ -3820,7 +3868,8 @@ def caja():
                            base_caja=conf.base_caja,
                            dinero_en_caja=(te + conf.base_caja - tg),
                            neto=te+td-tg, fecha=f_str, total_dia=te+td,
-                           sedes=Sede.query.filter_by(activa=True).all(),
+                           movimientos_caja=movimientos_caja,
+                           sedes=sedes_activas,
                            sede_actual=str(sede_filtro) if sede_filtro is not None else "")
 
 @app.route("/reportes")
